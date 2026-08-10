@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#6f8175" />
+    <meta name="description" content="Afterglow OS — a calm, lofi desktop in your browser." />
+    <title>Afterglow OS</title>
+    <link rel="icon" type="image/png" href="assets/photos/aos.png" />
+    <link rel="apple-touch-icon" href="assets/photos/aos.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <svg class="svg-library" aria-hidden="true">
+      <symbol id="i-computer" viewBox="0 0 48 48"><path d="M7 7h34v27H7z" fill="#d9d4c3" stroke="#33423f" stroke-width="2"/><path d="M10 10h28v19H10z" fill="#637f79"/><path d="M14 14h16v2H14zm0 5h11v2H14z" fill="#d6c7a6" opacity=".8"/><path d="M19 34h10l2 6H17z" fill="#aaa99f" stroke="#33423f" stroke-width="2"/><path d="M13 40h22v3H13z" fill="#d9d4c3" stroke="#33423f" stroke-width="2"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 48 48"><path d="M5 13h15l4 5h19v23H5z" fill="#d19a62" stroke="#3f403a" stroke-width="2"/><path d="M5 18h38v5H5z" fill="#e6b679"/><path d="M8 26h32v12H8z" fill="#dba86d" opacity=".72"/></symbol>
+      <symbol id="i-note" viewBox="0 0 48 48"><path d="M10 5h28v38H10z" fill="#eee7d2" stroke="#3e4542" stroke-width="2"/><path d="M16 14h16M16 20h16M16 26h12M16 32h14" stroke="#81958b" stroke-width="2"/><path d="M33 5h5v5" fill="#bfc9bd"/></symbol>
+      <symbol id="i-bin" viewBox="0 0 48 48"><path d="M13 14h22l-2 29H15z" fill="#b8c6bf" stroke="#364541" stroke-width="2"/><path d="M10 10h28v5H10zM19 6h10v4H19z" fill="#d9ded8" stroke="#364541" stroke-width="2"/><path d="M19 20v16m5-16v16m5-16v16" stroke="#71887e" stroke-width="2"/></symbol>
+      <symbol id="i-document" viewBox="0 0 48 48"><path d="M10 5h21l7 7v31H10z" fill="#f1ebd8" stroke="#3e4542" stroke-width="2"/><path d="M31 5v8h7" fill="#c9d0c5" stroke="#3e4542" stroke-width="2"/><path d="M16 21h16M16 27h16M16 33h12" stroke="#85978d" stroke-width="2"/></symbol>
+      <symbol id="i-headphones" viewBox="0 0 48 48"><path d="M8 27v-5a16 16 0 0132 0v5" fill="none" stroke="#35433f" stroke-width="4"/><rect x="5" y="25" width="9" height="15" rx="3" fill="#c77a62" stroke="#35433f" stroke-width="2"/><rect x="34" y="25" width="9" height="15" rx="3" fill="#c77a62" stroke="#35433f" stroke-width="2"/></symbol>
+      <symbol id="i-chrome" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="#f2eee0" stroke="#344440" stroke-width="2"/><path d="M24 24L42 24A18 18 0 0033 8.4L24 24z" fill="#d76368"/><path d="M24 24L33 39.6A18 18 0 014.8 19L24 24z" fill="#d6ad67"/><path d="M24 24L4.8 19A18 18 0 0133 8.4L24 24z" fill="#6f9a78"/><circle cx="24" cy="24" r="9" fill="#547f91" stroke="#f4eee0" stroke-width="3"/><circle cx="21" cy="21" r="3" fill="#a9cad0" opacity=".75"/></symbol>
+      <symbol id="i-minesweeper" viewBox="0 0 48 48"><path d="M5 5h38v38H5z" fill="#d5d1c4" stroke="#344440" stroke-width="2"/><path d="M8 8h10v10H8zm11 0h10v10H19zm11 0h10v10H30zM8 19h10v10H8zm22 0h10v10H30zM8 30h10v10H8zm11 0h10v10H19zm11 0h10v10H30z" fill="#78938b" stroke="#f4eee0"/><circle cx="24" cy="24" r="7" fill="#283a39"/><path d="M24 13v5m0 12v5M13 24h5m12 0h5m-18-7l4 4m6 6l4 4m0-14l-4 4m-6 6l-4 4" stroke="#df7379" stroke-width="2"/><circle cx="22" cy="22" r="2" fill="#f4e6c7"/></symbol>
+      <symbol id="i-fishing" viewBox="0 0 48 48"><path d="M5 8h38v33H5z" fill="#1c4a50" stroke="#334440" stroke-width="2"/><path d="M6 25c7-4 11 3 18-1s11 3 18-1v17H6z" fill="#2c6970"/><path d="M6 31c7-4 11 3 18-1s11 3 18-1M6 36c7-4 11 3 18-1s11 3 18-1" fill="none" stroke="#82a8a3" stroke-width="1.5"/><path d="M35 9c-8 4-11 12-11 19" fill="none" stroke="#e6d2a3" stroke-width="2"/><path d="M35 9l4-3" stroke="#9a6b4e" stroke-width="3" stroke-linecap="round"/><path d="M24 27v5" stroke="#eee4c9"/><circle cx="24" cy="34" r="3" fill="#df7379"/><path d="M8 19l8-8 8 8zM24 19l7-7 7 7z" fill="#17383d" opacity=".9"/></symbol>
+      <symbol id="i-start" viewBox="0 0 32 32"><path d="M4 5h11v11H4zm13 0h11v11H17zM4 18h11v9H4zm13 0h11v9H17z" fill="#e8dfc8"/><path d="M6 7h7v7H6zm13 0h7v7h-7zM6 20h7v5H6zm13 0h7v5h-7z" fill="#92aa9e"/></symbol>
+    </svg>
+
+    <main id="desktop" class="desktop" aria-label="Afterglow desktop">
+      <div class="rain-wallpaper" aria-hidden="true"></div>
+      <div class="sky-grain"></div>
+      <div class="sun-haze"></div>
+      <div class="landscape landscape-back"></div>
+      <div class="landscape landscape-front"></div>
+      <div class="power-lines" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+      <section id="desktop-icons" class="desktop-icons" aria-label="Desktop icons"></section>
+
+      <aside id="cassette-player" class="now-playing" aria-label="Raining in Osaka cassette player">
+        <div id="cassette-button" class="cassette-art" role="button" tabindex="0" aria-label="Play Raining in Osaka">
+          <span class="tape-label">SIDE A</span>
+          <div class="tape-window"><i></i><i></i></div>
+          <span class="tape-title">osaka rain</span>
+        </div>
+        <div class="track-copy">
+          <span class="eyebrow">NOW PLAYING</span>
+          <strong>Raining in Osaka</strong>
+          <span>rainy night mix · local cassette</span>
+          <div id="track-seek" class="track-line" role="slider" tabindex="0" aria-label="Seek through Raining in Osaka" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="track-progress"></i></div>
+          <div class="track-details"><span>LOFI / OSAKA</span><time id="track-time">0:00 / 19:11</time></div>
+        </div>
+        <div class="player-controls">
+          <button id="volume-button" class="round-button volume-button" aria-label="Adjust cassette volume" aria-expanded="false">♫</button>
+          <div id="volume-popover" class="volume-popover hidden">
+            <input id="volume-slider" type="range" min="0" max="100" value="78" aria-label="Cassette volume" />
+            <span id="volume-value">78%</span>
+          </div>
+          <button id="play-button" class="round-button" aria-label="Play Raining in Osaka">▶</button>
+        </div>
+        <audio id="lofi-audio" src="assets/audio/RAINING IN ＯＳＡＫＡ.mp3" preload="auto" autoplay loop></audio>
+      </aside>
+
+      <div id="window-layer" class="window-layer" aria-live="polite"></div>
+      <div id="context-menu" class="context-menu hidden" role="menu"></div>
+      <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+      <section id="start-menu" class="start-menu hidden" aria-label="Start menu">
+        <div class="start-sidebar"><span>AFTERGLOW</span></div>
+        <div class="start-content">
+          <header>
+            <div class="user-avatar">A</div>
+            <div><strong>evening, friend</strong><span>local user</span></div>
+          </header>
+          <nav>
+            <button data-start-action="computer"><svg><use href="#i-computer"/></svg><span><b>My Computer</b><small>Browse your things</small></span></button>
+            <button data-start-action="notes"><svg><use href="#i-note"/></svg><span><b>Notepad</b><small>Write something down</small></span></button>
+            <button data-start-action="music"><svg><use href="#i-headphones"/></svg><span><b>Lofi Player</b><small>Pause or play the mood</small></span></button>
+            <button data-start-action="minesweeper"><svg><use href="#i-minesweeper"/></svg><span><b>Night Mines</b><small>A rainy game of Minesweeper</small></span></button>
+            <button data-start-action="fishing"><svg><use href="#i-fishing"/></svg><span><b>Rainy Lake Fishing</b><small>Cast a line beside the motel</small></span></button>
+          </nav>
+          <footer><button data-start-action="about">? &nbsp; About Afterglow</button><button data-start-action="sleep">☾ &nbsp; Rest mode</button></footer>
+        </div>
+      </section>
+
+      <footer class="taskbar">
+        <button id="start-button" class="start-button" aria-expanded="false"><svg><use href="#i-start"/></svg><span>afterglow</span></button>
+        <div class="taskbar-divider"></div>
+        <div id="task-items" class="task-items"></div>
+        <div class="tray">
+          <button id="sound-toggle" aria-label="Toggle sound">♫</button>
+          <span class="tray-divider"></span>
+          <time id="clock"></time>
+        </div>
+      </footer>
+    </main>
+
+    <template id="window-template">
+      <article class="app-window" tabindex="-1">
+        <header class="titlebar">
+          <div class="title-copy"><span class="title-icon"></span><strong class="window-title"></strong></div>
+          <div class="window-controls">
+            <button data-control="minimize" aria-label="Minimize">_</button>
+            <button data-control="maximize" aria-label="Maximize">□</button>
+            <button data-control="close" aria-label="Close">×</button>
+          </div>
+        </header>
+        <div class="window-content"></div>
+        <div class="resize-handle"></div>
+      </article>
+    </template>
+
+    <script src="minesweeper.js"></script>
+    <script src="fishing.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
