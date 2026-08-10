@@ -16,7 +16,12 @@
   let iconWasDragged = false;
   const windows = new Map();
   const explorerRefreshers = new Set();
-  const DESKTOP_GRID = { originX: 12, originY: 12, columnWidth: 84, rowHeight: 88 };
+  const DESKTOP_GRID = { originX: 10, originY: 10, columnWidth: 72, rowHeight: 80 };
+  const APP_SHORTCUTS = [
+    { id: "google-chrome", name: "Google Chrome", type: "chrome", parentId: "desktop", shortcut: true, created: Date.now() - 82000000 },
+    { id: "night-mines", name: "Night Mines", type: "minesweeper", parentId: "desktop", shortcut: true, created: Date.now() - 81000000 },
+    { id: "rainy-lake-fishing", name: "Rainy Lake Fishing", type: "fishing", parentId: "desktop", shortcut: true, created: Date.now() - 80000000 }
+  ];
 
   const icons = {
     computer: "#i-computer", folder: "#i-folder", note: "#i-note",
@@ -26,15 +31,18 @@
   const seedState = {
     items: [
       { id: "documents", name: "My Documents", type: "folder", parentId: "desktop", system: true, created: Date.now() - 86400000 },
+      ...APP_SHORTCUTS,
       { id: "journal", name: "Journal", type: "folder", parentId: "desktop", created: Date.now() - 5400000 },
       { id: "welcome", name: "welcome.txt", type: "text", parentId: "desktop", content: "Welcome to Afterglow OS.\n\nThis is your quiet little corner of the internet. Double-click folders to explore, or open this note in Notepad.\n\nRight-click the desktop to create something new. Everything you make stays here, even after you close the tab.\n\n— take it slow ☁", created: Date.now() - 3600000, modified: Date.now() - 3600000 },
       { id: "thoughts", name: "small thoughts.txt", type: "text", parentId: "journal", content: "buy oranges\nwater the plants\nfinish that song\n\nremember: not every day has to be productive.", created: Date.now() - 2500000, modified: Date.now() - 2500000 }
     ],
-    trash: []
+    trash: [],
+    shortcutSchema: 1
   };
 
   let state = loadState();
   state.iconPositions ||= {};
+  if (migrateAppShortcuts()) saveState();
 
   function loadState() {
     try {
@@ -42,6 +50,20 @@
       if (stored && Array.isArray(stored.items) && Array.isArray(stored.trash)) return stored;
     } catch (_) { /* use seed */ }
     return JSON.parse(JSON.stringify(seedState));
+  }
+
+  function migrateAppShortcuts() {
+    let changed = false;
+    const documents = [...state.items, ...state.trash].find(item => item.id === "documents");
+    if (documents?.system) { delete documents.system; changed = true; }
+    if (state.shortcutSchema !== 1) {
+      APP_SHORTCUTS.forEach(shortcut => {
+        if (![...state.items, ...state.trash].some(item => item.id === shortcut.id)) { state.items.push({ ...shortcut }); changed = true; }
+      });
+      state.shortcutSchema = 1;
+      changed = true;
+    }
+    return changed;
   }
 
   function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -139,10 +161,7 @@
     const dynamic = state.items.filter(item => item.parentId === "desktop");
     const entries = [
       { id: "computer", name: "My Computer", type: "computer", action: () => openExplorer("desktop") },
-      { id: "google-chrome", name: "Google Chrome", type: "chrome", system: true, action: openChrome },
       ...dynamic.map(item => ({ ...item, action: () => openItem(item.id) })),
-      { id: "night-mines", name: "Night Mines", type: "minesweeper", system: true, action: openMinesweeper },
-      { id: "rainy-lake-fishing", name: "Rainy Lake Fishing", type: "fishing", system: true, action: openFishing },
       { id: "recycle", name: "Recycle Bin", type: "bin", action: () => openExplorer("trash") }
     ];
     iconGrid.innerHTML = "";
@@ -221,7 +240,11 @@
     moving.sort((a,b) => a.y - b.y || a.x - b.x).forEach(item => {
       const desired = desktopCellFromPosition(parseFloat(item.icon.style.left) || item.x, parseFloat(item.icon.style.top) || item.y);
       const candidates = [];
-      for (let column = 0; column < columns; column += 1) for (let row = 0; row < rows; row += 1) candidates.push({ column, row, distance:Math.abs(column - desired.column) + Math.abs(row - desired.row) });
+      for (let column = 0; column < columns; column += 1) for (let row = 0; row < rows; row += 1) {
+        const dx = (column - desired.column) * DESKTOP_GRID.columnWidth;
+        const dy = (row - desired.row) * DESKTOP_GRID.rowHeight;
+        candidates.push({ column, row, distance:dx * dx + dy * dy });
+      }
       candidates.sort((a,b) => a.distance - b.distance || a.column - b.column || a.row - b.row);
       const chosen = candidates.find(cell => !occupied.has(`${cell.column}:${cell.row}`)) || desired;
       occupied.add(`${chosen.column}:${chosen.row}`);
@@ -229,7 +252,7 @@
       item.icon.classList.add("snapping");
       item.icon.style.left = `${position.x}px`;
       item.icon.style.top = `${position.y}px`;
-      setTimeout(() => item.icon.classList.remove("snapping"), 240);
+      setTimeout(() => item.icon.classList.remove("snapping"), 190);
       state.iconPositions[item.id] = position;
     });
   }
@@ -327,6 +350,9 @@
     const item = getItem(id);
     if (!item) return;
     if (item.type === "folder") openExplorer(item.id);
+    else if (item.type === "chrome") openChrome();
+    else if (item.type === "minesweeper") openMinesweeper();
+    else if (item.type === "fishing") openFishing();
     else openNotepad(item.id);
   }
 
@@ -498,7 +524,7 @@
           const draggedItem = getItem(itemId);
           ghost = document.createElement("div");
           ghost.className = "file-drag-ghost";
-          ghost.innerHTML = `${svg(draggedItem?.type === "folder" ? "folder" : "document")}<span>${dragIds.length === 1 ? escapeHtml(draggedItem?.name || "Item") : `${dragIds.length} items`}</span>`;
+          ghost.innerHTML = `${svg(draggedItem?.type === "text" ? "document" : draggedItem?.type || "document")}<span>${dragIds.length === 1 ? escapeHtml(draggedItem?.name || "Item") : `${dragIds.length} items`}</span>`;
           document.body.append(ghost);
           root.querySelectorAll(".file-item").forEach(button => button.classList.toggle("dragging", selectedIds.has(button.dataset.id)));
         }
@@ -594,17 +620,17 @@
       fileArea.innerHTML = source.length ? `<div class="file-grid"></div>` : `<div class="empty-folder">${currentId === "trash" ? "Recycle Bin is empty.<br>Nothing but dust motes here." : "This folder is empty.<br>Right-click to make something."}</div>`;
       const grid = fileArea.querySelector(".file-grid");
       if (grid) visibleItems.forEach(item => {
-        const button = document.createElement("button"); button.dataset.id=item.id;button.dataset.itemType=item.type;button.className = `file-item${selectedIds.has(item.id) ? " selected" : ""}`; button.innerHTML = `${svg(item.type === "folder" ? "folder" : "document")}<span>${escapeHtml(item.name)}</span>`;
+        const button = document.createElement("button"); button.dataset.id=item.id;button.dataset.itemType=item.type;button.className = `file-item${selectedIds.has(item.id) ? " selected" : ""}`; button.innerHTML = `${svg(item.type === "text" ? "document" : item.type)}<span>${escapeHtml(item.name)}</span>`;
         if (item.type === "folder") button.dataset.dropFolderId = item.id;
         button.addEventListener("pointerdown", e => beginFileDrag(e, item.id));
         button.addEventListener("click", e => { e.stopPropagation();if(fileWasDragged){fileWasDragged=false;e.preventDefault();return;}selectExplorerItem(item.id, e); });
-        button.addEventListener("dblclick", () => currentId === "trash" ? restoreItem(item.id) : item.type === "folder" ? navigate(item.id) : openNotepad(item.id));
+        button.addEventListener("dblclick", () => currentId === "trash" ? restoreItem(item.id) : item.type === "folder" ? navigate(item.id) : openItem(item.id));
         button.addEventListener("contextmenu", e => {
           if(!selectedIds.has(item.id)){selectedIds.clear();selectedIds.add(item.id);lastSelectedId=item.id;syncExplorerSelection();}
           const chosen=[...selectedIds];
           showContext(e, currentId === "trash" ? [
             { label:`Restore${chosen.length>1?` ${chosen.length} items`:""}`, action:() => { restoreItems(chosen); selectedIds.clear(); render(); } }, { label:`Delete permanently${chosen.length>1?` (${chosen.length})`:""}`, action:() => permanentlyDelete(chosen,()=>{selectedIds.clear();render();}) }
-          ] : [ { label:"Open", action:() => item.type === "folder" ? navigate(item.id) : openNotepad(item.id) }, ...(chosen.length===1?[{ label:"Rename", action:() => promptRename(item.id, render) }]:[]), "separator", { label:`Move to Recycle Bin${chosen.length>1?` (${chosen.length})`:""}`, action:() => moveToTrash(chosen,()=>{selectedIds.clear();render();}) } ]);
+          ] : [ { label:"Open", action:() => item.type === "folder" ? navigate(item.id) : openItem(item.id) }, ...(chosen.length===1?[{ label:"Rename", action:() => promptRename(item.id, render) }]:[]), "separator", { label:`Move to Recycle Bin${chosen.length>1?` (${chosen.length})`:""}`, action:() => moveToTrash(chosen,()=>{selectedIds.clear();render();}) } ]);
         });
         grid.append(button);
       });
