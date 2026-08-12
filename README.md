@@ -18,7 +18,9 @@ No build step or package installation is required. Files and folders are stored 
 - Original high-resolution Afterglow rainy-night wallpaper with a lightweight animated rain layer and matching teal and neon UI palette
 - Classic click-drag selection, multi-icon dragging, cursor-accurate Explorer-to-desktop drops, smooth collision-free high-density grid snapping, and folder/recycle-bin drop targets across the desktop and Explorer
 - Draggable, resizable, minimizable, maximizable windows
-- Working Start menu, taskbar, clock, expanded Windows-style desktop/file context menus, and rest mode
+- Searchable two-column Start menu, quick-launch taskbar, task-button menus, show-desktop control, live clock/calendar, expanded Windows-style context menus, and rest mode
+- Rainy Motel Gallery with six built-in photographs, thumbnail browsing, keyboard controls, zoom/fit, slideshow, metadata, and Set as Wallpaper
+- Standard Calculator with keyboard input, memory controls, percent/square-root/reciprocal operations, and a compact calculation tape
 - Embedded Google Chrome-style browser window with Google search, an address bar, navigation controls, bookmarks, and guarded in-desktop browsing
 - Native cassette player with the local Raining in Osaka mix, live time, seeking, saved volume, mute, and pause/play
 - Night Mines, a complete Minesweeper game with first-click protection, flood reveal, flagging, number chording, three difficulties, keyboard/touch controls, sound, and persistent best times
