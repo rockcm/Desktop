@@ -16,20 +16,21 @@ No build step or package installation is required. Files and folders are stored 
 
 - Custom retro SVG icon set
 - Original high-resolution Afterglow rainy-night wallpaper with a lightweight animated rain layer and matching teal and neon UI palette
-- Classic click-drag selection, multi-icon dragging, smooth collision-free high-density grid snapping, and folder/recycle-bin drop targets across the desktop and Explorer
+- Classic click-drag selection, multi-icon dragging, cursor-accurate Explorer-to-desktop drops, smooth collision-free high-density grid snapping, and folder/recycle-bin drop targets across the desktop and Explorer
 - Draggable, resizable, minimizable, maximizable windows
-- Working Start menu, taskbar, clock, context menus, and rest mode
+- Working Start menu, taskbar, clock, expanded Windows-style desktop/file context menus, and rest mode
 - Embedded Google Chrome-style browser window with Google search, an address bar, navigation controls, bookmarks, and guarded in-desktop browsing
 - Native cassette player with the local Raining in Osaka mix, live time, seeking, saved volume, mute, and pause/play
 - Night Mines, a complete Minesweeper game with first-click protection, flood reveal, flagging, number chording, three difficulties, keyboard/touch controls, sound, and persistent best times
 - Rainy Lake Fishing, an original cast-and-reel game with six illustrated fish species, three specialized lures, streak scoring, timing and line-tension mechanics, animated lake life, sound, and a persistent specimen archive with per-species records
-- Folder creation, navigation, renaming, drag-box/Ctrl/Shift multi-selection, and keyboard deletion
+- Neon Snake, a polished neon-rain arcade game with three routes, combo scoring, escalating speed and barriers, special pickups, saved records, keyboard/touch controls, particles, pause, help, and sound
+- Folder creation, clickable hover-highlighted breadcrumb paths, navigation, renaming, drag-box/Ctrl/Shift multi-selection, and keyboard deletion
 - Text-file creation, editing, saving, and timestamps
 - Recycle Bin with multi-item restore, themed desktop confirmation windows, permanent delete, and empty actions
 - Responsive layout for smaller screens
 - Custom neon AOS browser-tab and touch icon
 
-The app remains dependency-free. The desktop lives in `index.html`, `styles.css`, and `app.js`; game logic is isolated in `minesweeper.js` and `fishing.js` so new applications can be added without introducing a framework prematurely.
+The app remains dependency-free. The desktop lives in `index.html`, `styles.css`, and `app.js`; game logic is isolated in `minesweeper.js`, `fishing.js`, and `snake.js` so new applications can be added without introducing a framework prematurely.
 
 ## Wallpaper
 

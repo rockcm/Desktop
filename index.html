@@ -21,6 +21,7 @@
       <symbol id="i-chrome" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="#f2eee0" stroke="#344440" stroke-width="2"/><path d="M24 24L42 24A18 18 0 0033 8.4L24 24z" fill="#d76368"/><path d="M24 24L33 39.6A18 18 0 014.8 19L24 24z" fill="#d6ad67"/><path d="M24 24L4.8 19A18 18 0 0133 8.4L24 24z" fill="#6f9a78"/><circle cx="24" cy="24" r="9" fill="#547f91" stroke="#f4eee0" stroke-width="3"/><circle cx="21" cy="21" r="3" fill="#a9cad0" opacity=".75"/></symbol>
       <symbol id="i-minesweeper" viewBox="0 0 48 48"><path d="M5 5h38v38H5z" fill="#d5d1c4" stroke="#344440" stroke-width="2"/><path d="M8 8h10v10H8zm11 0h10v10H19zm11 0h10v10H30zM8 19h10v10H8zm22 0h10v10H30zM8 30h10v10H8zm11 0h10v10H19zm11 0h10v10H30z" fill="#78938b" stroke="#f4eee0"/><circle cx="24" cy="24" r="7" fill="#283a39"/><path d="M24 13v5m0 12v5M13 24h5m12 0h5m-18-7l4 4m6 6l4 4m0-14l-4 4m-6 6l-4 4" stroke="#df7379" stroke-width="2"/><circle cx="22" cy="22" r="2" fill="#f4e6c7"/></symbol>
       <symbol id="i-fishing" viewBox="0 0 48 48"><path d="M5 8h38v33H5z" fill="#1c4a50" stroke="#334440" stroke-width="2"/><path d="M6 25c7-4 11 3 18-1s11 3 18-1v17H6z" fill="#2c6970"/><path d="M6 31c7-4 11 3 18-1s11 3 18-1M6 36c7-4 11 3 18-1s11 3 18-1" fill="none" stroke="#82a8a3" stroke-width="1.5"/><path d="M35 9c-8 4-11 12-11 19" fill="none" stroke="#e6d2a3" stroke-width="2"/><path d="M35 9l4-3" stroke="#9a6b4e" stroke-width="3" stroke-linecap="round"/><path d="M24 27v5" stroke="#eee4c9"/><circle cx="24" cy="34" r="3" fill="#df7379"/><path d="M8 19l8-8 8 8zM24 19l7-7 7 7z" fill="#17383d" opacity=".9"/></symbol>
+      <symbol id="i-snake" viewBox="0 0 48 48"><rect x="5" y="5" width="38" height="38" rx="3" fill="#102e35" stroke="#334440" stroke-width="2"/><path d="M10 15h10v8h10v9h9" fill="none" stroke="#70b49f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14h9v7" fill="none" stroke="#a1d2bb" stroke-width="2" stroke-linecap="round" opacity=".8"/><rect x="34" y="27" width="8" height="10" rx="3" fill="#efbf70" stroke="#f4e6bd"/><circle cx="39" cy="30" r="1" fill="#263b3a"/><circle cx="12" cy="36" r="4" fill="#e9767f" stroke="#f2c09c"/><path d="M12 32c0-4 4-5 6-6" fill="none" stroke="#80a98c" stroke-width="2"/></symbol>
       <symbol id="i-start" viewBox="0 0 32 32"><path d="M4 5h11v11H4zm13 0h11v11H17zM4 18h11v9H4zm13 0h11v9H17z" fill="#e8dfc8"/><path d="M6 7h7v7H6zm13 0h7v7h-7zM6 20h7v5H6zm13 0h7v5h-7z" fill="#92aa9e"/></symbol>
     </svg>
 
@@ -75,6 +76,7 @@
             <button data-start-action="music"><svg><use href="#i-headphones"/></svg><span><b>Lofi Player</b><small>Pause or play the mood</small></span></button>
             <button data-start-action="minesweeper"><svg><use href="#i-minesweeper"/></svg><span><b>Night Mines</b><small>A rainy game of Minesweeper</small></span></button>
             <button data-start-action="fishing"><svg><use href="#i-fishing"/></svg><span><b>Rainy Lake Fishing</b><small>Cast a line beside the motel</small></span></button>
+            <button data-start-action="snake"><svg><use href="#i-snake"/></svg><span><b>Neon Snake</b><small>Run the rain-slick night grid</small></span></button>
           </nav>
           <footer><button data-start-action="about">? &nbsp; About Afterglow</button><button data-start-action="sleep">☾ &nbsp; Rest mode</button></footer>
         </div>
@@ -109,6 +111,7 @@
 
     <script src="minesweeper.js"></script>
     <script src="fishing.js"></script>
+    <script src="snake.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

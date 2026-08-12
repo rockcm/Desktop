@@ -3,12 +3,12 @@
 
   const STORAGE_KEY = "afterglow-fishing-v1";
   const FISH = [
-    { id:"perch", name:"Rain Perch", rarity:"Common", color:"#d8b36e", accent:"#7e9e96", belly:"#ead9aa", min:.35, max:1.25, chance:34, fight:.72, points:90, shape:"round", description:"A small golden lake fish that feeds close to the rain-broken surface.", habitat:"Shallow reeds", tip:"Rain Moth" },
-    { id:"bluegill", name:"Bluegill", rarity:"Common", color:"#7fa9ad", accent:"#e0bb71", belly:"#c7d7cf", min:.45, max:1.6, chance:28, fight:.82, points:115, shape:"round", description:"A lively blue-green fish with a bright amber breast and a stubborn pull.", habitat:"Motel shoreline", tip:"Rain Moth" },
-    { id:"trout", name:"Silver Trout", rarity:"Uncommon", color:"#c5d3cc", accent:"#df7d82", belly:"#eef0e8", min:1.1, max:3.8, chance:19, fight:1.02, points:180, shape:"sleek", description:"Fast, reflective and easiest to spot when neon crosses the water.", habitat:"Open water", tip:"Silver Minnow" },
-    { id:"char", name:"Lake Char", rarity:"Rare", color:"#547c77", accent:"#e19a66", belly:"#a9c0b6", min:2.2, max:6.4, chance:11, fight:1.2, points:280, shape:"sleek", description:"A deep-water hunter marked by ember-orange fins and powerful runs.", habitat:"Cold lake shelf", tip:"Silver Minnow" },
-    { id:"pike", name:"Neon Pike", rarity:"Rare", color:"#83a98d", accent:"#ee7a82", belly:"#c8d8bf", min:3.5, max:9.2, chance:6, fight:1.38, points:420, shape:"long", description:"Long, quick and striped like the motel sign reflected after midnight.", habitat:"Pine-shadow bank", tip:"Neon Spinner" },
-    { id:"koi", name:"Midnight Koi", rarity:"Legendary", color:"#e47a80", accent:"#f0c47e", belly:"#f2d3b0", min:5.5, max:12.5, chance:2, fight:1.58, points:850, shape:"koi", description:"A rumored old koi whose scales glow coral beneath the rain.", habitat:"Unknown depths", tip:"Neon Spinner" }
+    { id:"perch", name:"Rain Perch", rarity:"Common", challenge:.08, color:"#d8b36e", accent:"#7e9e96", belly:"#ead9aa", min:.35, max:1.25, chance:34, fight:.72, points:90, shape:"round", description:"A small golden lake fish that feeds close to the rain-broken surface.", habitat:"Shallow reeds", tip:"Rain Moth" },
+    { id:"bluegill", name:"Bluegill", rarity:"Common", challenge:.2, color:"#7fa9ad", accent:"#e0bb71", belly:"#c7d7cf", min:.45, max:1.6, chance:28, fight:.82, points:115, shape:"round", description:"A lively blue-green fish with a bright amber breast and a stubborn pull.", habitat:"Motel shoreline", tip:"Rain Moth" },
+    { id:"trout", name:"Silver Trout", rarity:"Uncommon", challenge:.42, color:"#c5d3cc", accent:"#df7d82", belly:"#eef0e8", min:1.1, max:3.8, chance:19, fight:1.02, points:180, shape:"sleek", description:"Fast, reflective and easiest to spot when neon crosses the water.", habitat:"Open water", tip:"Silver Minnow" },
+    { id:"char", name:"Lake Char", rarity:"Rare", challenge:.64, color:"#547c77", accent:"#e19a66", belly:"#a9c0b6", min:2.2, max:6.4, chance:11, fight:1.2, points:280, shape:"sleek", description:"A deep-water hunter marked by ember-orange fins and powerful runs.", habitat:"Cold lake shelf", tip:"Silver Minnow" },
+    { id:"pike", name:"Neon Pike", rarity:"Rare", challenge:.82, color:"#83a98d", accent:"#ee7a82", belly:"#c8d8bf", min:3.5, max:9.2, chance:6, fight:1.38, points:420, shape:"long", description:"Long, quick and striped like the motel sign reflected after midnight.", habitat:"Pine-shadow bank", tip:"Neon Spinner" },
+    { id:"koi", name:"Midnight Koi", rarity:"Legendary", challenge:1, color:"#e47a80", accent:"#f0c47e", belly:"#f2d3b0", min:5.5, max:12.5, chance:2, fight:1.58, points:850, shape:"koi", description:"A rumored old koi whose scales glow coral beneath the rain.", habitat:"Unknown depths", tip:"Neon Spinner" }
   ];
   const LURES = [
     { id:"moth", name:"Rain Moth", label:"MOTH", bite:.76, rare:0, fight:.96, note:"Quick bites, gentle fights" },
@@ -50,7 +50,8 @@
                 <li><b>Hold</b> Space or the action button to charge your cast.</li>
                 <li><b>Release</b> to send the bobber across the lake.</li>
                 <li>When it dips, <b>press quickly</b> to set the hook.</li>
-                <li><b>Hold and release</b> while reeling. Red snaps the line; zero tension loses the fish.</li>
+                <li><b>Hold and release</b> while reeling. Keep tension inside the green band.</li>
+                <li>Better fish have a <b>narrower safe band</b>, longer fights and violent surges. Red snaps the line; zero tension loses the fish.</li>
               </ol>
               <p>Long casts and specialized lures improve rare catches. Open Collection to inspect every recorded fish.</p>
             </div>
@@ -73,7 +74,7 @@
             </div>
             <div class="fish-meter-block">
               <div><span data-fish-meter-label>CAST POWER</span><b data-fish-meter-value>0%</b></div>
-              <div class="fish-meter"><i data-fish-meter></i><em></em></div>
+              <div class="fish-meter"><span class="fish-safe-zone"></span><i data-fish-meter></i><em></em></div>
               <small class="fish-reel-progress"><i data-fish-progress></i></small>
             </div>
             <button type="button" class="fish-action" data-fish-action><span>HOLD TO CAST</span><small>SPACE</small></button>
@@ -108,6 +109,7 @@
     const statusElement = root.querySelector("[data-fish-status]");
     const meterLabel = root.querySelector("[data-fish-meter-label]");
     const meterValue = root.querySelector("[data-fish-meter-value]");
+    const meterElement = root.querySelector(".fish-meter");
     const meterFill = root.querySelector("[data-fish-meter]");
     const progressFill = root.querySelector("[data-fish-progress]");
     const scoreElement = root.querySelector("[data-fish-score]");
@@ -145,6 +147,7 @@
     let reelProgress = 0;
     let slackTime = 0;
     let fishClock = 0;
+    let wasSurging = false;
     let lastTime = performance.now();
     let animationFrame = 0;
     let destroyed = false;
@@ -315,8 +318,17 @@
       let meterTitle = "CAST POWER";
       let description = `${Math.round(castPower)}%`;
       actionButton.disabled = false;
-      root.classList.toggle("line-danger", phase === "hooked" && tension > 78);
-      root.classList.toggle("line-slack", phase === "hooked" && tension < 18);
+      const safeMin = hookedFish?.safeMin ?? 24;
+      const safeMax = hookedFish?.safeMax ?? 78;
+      if (hookedFish) {
+        root.dataset.hookedFish = hookedFish.id;
+        root.dataset.fightChallenge = hookedFish.challenge.toFixed(2);
+        root.dataset.safeMin = hookedFish.safeMin.toFixed(1);
+        root.dataset.safeMax = hookedFish.safeMax.toFixed(1);
+        root.dataset.reelTarget = hookedFish.target.toFixed(1);
+      }
+      root.classList.toggle("line-danger", phase === "hooked" && tension > safeMax);
+      root.classList.toggle("line-slack", phase === "hooked" && tension < safeMin);
       root.classList.toggle("fish-biting", phase === "bite");
       root.classList.toggle("fish-hooked", phase === "hooked");
       root.classList.toggle("fish-charging", phase === "charging");
@@ -324,14 +336,18 @@
       if (phase === "casting") { label = "CASTING..."; actionButton.disabled = true; }
       if (phase === "waiting") { label = "WAIT FOR A BITE"; actionButton.disabled = true; meter = 0; description = "—"; }
       if (phase === "bite") { label = "HOOK IT!"; meterTitle = "BITE WINDOW"; meter = Math.max(0, biteRemaining / 1.15 * 100); description = `${Math.ceil(biteRemaining * 10) / 10}s`; }
-      if (phase === "hooked") { label = inputHeld ? "REELING..." : "HOLD TO REEL"; meterTitle = tension > 78 ? "LINE TENSION / DANGER" : tension < 18 ? "LINE TENSION / SLACK" : "LINE TENSION / STEADY"; meter = tension; description = `${Math.round(tension)}%`; }
+      if (phase === "hooked") { label = inputHeld ? "REELING..." : "HOLD TO REEL"; meterTitle = tension > safeMax ? "LINE TENSION / DANGER" : tension < safeMin ? "LINE TENSION / SLACK" : `LINE TENSION / ${hookedFish.rarity.toUpperCase()}`; meter = tension; description = `${Math.round(tension)}%`; }
       if (phase === "caught" || phase === "escaped") { label = "CAST AGAIN"; meter = 0; description = "READY"; }
       actionButton.querySelector("span").textContent = label;
       meterLabel.textContent = meterTitle;
       meterValue.textContent = description;
       meterFill.style.width = `${Math.max(0, Math.min(100, meter))}%`;
-      meterFill.classList.toggle("danger", phase === "hooked" && tension > 78);
-      meterFill.classList.toggle("slack", phase === "hooked" && tension < 18);
+      meterFill.classList.toggle("danger", phase === "hooked" && tension > safeMax);
+      meterFill.classList.toggle("slack", phase === "hooked" && tension < safeMin);
+      meterElement.classList.toggle("show-safe-zone", phase === "hooked");
+      meterElement.style.setProperty("--safe-start", `${safeMin}%`);
+      meterElement.style.setProperty("--safe-width", `${Math.max(0, safeMax - safeMin)}%`);
+      meterElement.style.setProperty("--safe-end", `${safeMax}%`);
       progressFill.style.width = `${phase === "hooked" && hookedFish ? Math.min(100, reelProgress / hookedFish.target * 100) : 0}%`;
     }
 
@@ -345,7 +361,20 @@
       let roll = Math.random() * weighted.reduce((sum, item) => sum + item.weight, 0);
       const selected = weighted.find(item => (roll -= item.weight) <= 0)?.fish || FISH[0];
       const weight = selected.min + Math.pow(Math.random(), .72) * (selected.max - selected.min);
-      return { ...selected, weight, fight:selected.fight * lure.fight, target:72 + selected.fight * lure.fight * 27 };
+      const challenge = Math.max(.04, Math.min(1, selected.challenge + (lure.fight - 1) * .35));
+      const sizeChallenge = (weight - selected.min) / Math.max(.01, selected.max - selected.min);
+      return {
+        ...selected,
+        weight,
+        fight:selected.fight * lure.fight,
+        challenge,
+        safeMin:22 + challenge * 13,
+        safeMax:80 - challenge * 14,
+        tensionRise:27 + challenge * 12,
+        slackFall:21 + challenge * 17,
+        reelRate:27 - challenge * 7,
+        target:78 + challenge * 112 + sizeChallenge * (8 + challenge * 14)
+      };
     }
 
     function startCharging() {
@@ -372,11 +401,12 @@
       if (phase !== "bite") return;
       hookedFish = chooseFish();
       phase = "hooked";
-      tension = 43;
+      tension = (hookedFish.safeMin + hookedFish.safeMax) / 2;
       reelProgress = 7;
       slackTime = 0;
       fishClock = 0;
-      setMessage("FISH ON", `Something is pulling hard—manage the line!`);
+      wasSurging = false;
+      setMessage(`${hookedFish.rarity.toUpperCase()} FISH ON`, `${hookedFish.name} hooked. Keep the line inside the green band!`);
       tone(330, .05, .025, "square");
       tone(440, .07, .02, "square", .05);
     }
@@ -385,6 +415,7 @@
       phase = "escaped";
       inputHeld = false;
       root.classList.remove("fish-surge");
+      wasSurging = false;
       streak = 0;
       refreshStats();
       setMessage("THE LINE WENT QUIET", message);
@@ -397,6 +428,7 @@
       phase = "caught";
       inputHeld = false;
       root.classList.remove("fish-surge");
+      wasSurging = false;
       catchCount += 1;
       streak += 1;
       const streakMultiplier = 1 + Math.min(4, streak - 1) * .25;
@@ -438,6 +470,7 @@
       phase = "ready";
       hookedFish = null;
       root.classList.remove("fish-surge");
+      wasSurging = false;
       setMessage("ON THE SHORE", "Hold to charge your cast.");
       refreshStats();
       updateControls();
@@ -510,18 +543,28 @@
         if (biteRemaining <= 0) loseFish("The fish took the bait and slipped away.");
       } else if (phase === "hooked") {
         fishClock += delta;
-        const surge = Math.max(0, Math.sin(fishClock * (2.2 + hookedFish.fight)));
-        const pull = hookedFish.fight * (10 + surge * 16);
-        root.classList.toggle("fish-surge", surge > .78);
+        const primary = (Math.sin(fishClock * (2.15 + hookedFish.fight * .9)) + 1) / 2;
+        const chop = (Math.sin(fishClock * (5.4 + hookedFish.challenge * 3.2) + 1.3) + 1) / 2;
+        const surge = Math.pow(primary * .7 + chop * .3, 2.15 - hookedFish.challenge * .75);
+        const surging = surge > .72 - hookedFish.challenge * .2;
+        root.classList.toggle("fish-surge", surging);
+        if (surging && !wasSurging) {
+          setMessage(`${hookedFish.rarity.toUpperCase()} SURGE`, `${hookedFish.name} is running—ease off the reel!`);
+          tone(118 + hookedFish.challenge * 45, .07, .018, "sawtooth");
+        } else if (!surging && wasSurging) {
+          setMessage("FISH ON", "Recover tension and reel inside the green band.");
+        }
+        wasSurging = surging;
         if (inputHeld) {
-          tension += delta * (22 + pull);
-          const sweetSpot = tension >= 28 && tension <= 76 ? 1.34 : .72;
-          reelProgress += delta * (15.5 / hookedFish.fight + 8) * sweetSpot;
+          tension += delta * (hookedFish.tensionRise + surge * (14 + hookedFish.challenge * 55));
+          const sweetSpot = tension >= hookedFish.safeMin && tension <= hookedFish.safeMax;
+          reelProgress += delta * hookedFish.reelRate * (sweetSpot ? 1 : .12);
+          if (tension > hookedFish.safeMax) reelProgress -= delta * (2 + hookedFish.challenge * 6);
           slackTime = Math.max(0, slackTime - delta * 2);
         } else {
-          tension -= delta * (25 - hookedFish.fight * 3);
-          reelProgress -= delta * (2.4 + hookedFish.fight);
-          if (tension < 12) slackTime += delta;
+          tension -= delta * (hookedFish.slackFall + (surging ? hookedFish.challenge * 5 : 0));
+          reelProgress -= delta * (2.2 + hookedFish.challenge * 5.2);
+          if (tension < hookedFish.safeMin) slackTime += delta;
           else slackTime = Math.max(0, slackTime - delta);
         }
         tension = Math.max(0, tension);

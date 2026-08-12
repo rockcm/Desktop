@@ -20,12 +20,13 @@
   const APP_SHORTCUTS = [
     { id: "google-chrome", name: "Google Chrome", type: "chrome", parentId: "desktop", shortcut: true, created: Date.now() - 82000000 },
     { id: "night-mines", name: "Night Mines", type: "minesweeper", parentId: "desktop", shortcut: true, created: Date.now() - 81000000 },
-    { id: "rainy-lake-fishing", name: "Rainy Lake Fishing", type: "fishing", parentId: "desktop", shortcut: true, created: Date.now() - 80000000 }
+    { id: "rainy-lake-fishing", name: "Rainy Lake Fishing", type: "fishing", parentId: "desktop", shortcut: true, created: Date.now() - 80000000 },
+    { id: "neon-snake", name: "Neon Snake", type: "snake", parentId: "desktop", shortcut: true, created: Date.now() - 79000000 }
   ];
 
   const icons = {
     computer: "#i-computer", folder: "#i-folder", note: "#i-note",
-    document: "#i-document", bin: "#i-bin", headphones: "#i-headphones", minesweeper: "#i-minesweeper", fishing: "#i-fishing", chrome: "#i-chrome"
+    document: "#i-document", bin: "#i-bin", headphones: "#i-headphones", minesweeper: "#i-minesweeper", fishing: "#i-fishing", snake: "#i-snake", chrome: "#i-chrome"
   };
 
   const seedState = {
@@ -37,12 +38,13 @@
       { id: "thoughts", name: "small thoughts.txt", type: "text", parentId: "journal", content: "buy oranges\nwater the plants\nfinish that song\n\nremember: not every day has to be productive.", created: Date.now() - 2500000, modified: Date.now() - 2500000 }
     ],
     trash: [],
-    shortcutSchema: 1
+    shortcutSchema: 2
   };
 
   let state = loadState();
   state.iconPositions ||= {};
   if (migrateAppShortcuts()) saveState();
+  desktop.classList.toggle("desktop-icons-hidden", Boolean(state.desktopIconsHidden));
 
   function loadState() {
     try {
@@ -56,11 +58,13 @@
     let changed = false;
     const documents = [...state.items, ...state.trash].find(item => item.id === "documents");
     if (documents?.system) { delete documents.system; changed = true; }
-    if (state.shortcutSchema !== 1) {
-      APP_SHORTCUTS.forEach(shortcut => {
+    const previousSchema = Number(state.shortcutSchema) || 0;
+    if (previousSchema < 2) {
+      const additions = previousSchema < 1 ? APP_SHORTCUTS : APP_SHORTCUTS.filter(shortcut => shortcut.id === "neon-snake");
+      additions.forEach(shortcut => {
         if (![...state.items, ...state.trash].some(item => item.id === shortcut.id)) { state.items.push({ ...shortcut }); changed = true; }
       });
-      state.shortcutSchema = 1;
+      state.shortcutSchema = 2;
       changed = true;
     }
     return changed;
@@ -117,16 +121,39 @@
     return moving.some(item => item.parentId !== targetParentId) && moving.every(item => item.id !== targetParentId && !(item.type === "folder" && isFolderInside(targetParentId, item.id)));
   }
 
-  function moveItemsToFolder(ids, targetParentId) {
+  function moveItemsToFolder(ids, targetParentId, options = {}) {
     if (!canMoveItemsTo(ids, targetParentId)) return false;
     const moving = movableItems(ids).filter(item => item.parentId !== targetParentId);
-    moving.forEach(item => {
+    const desktopDrop = targetParentId === "desktop" && options.dropPoint;
+    const desktopRect = desktopDrop ? desktop.getBoundingClientRect() : null;
+    moving.forEach((item, index) => {
       item.name = movedItemName(item, targetParentId);
       item.parentId = targetParentId;
-      delete state.iconPositions[item.id];
+      if (desktopDrop) {
+        const columnOffset = index % 3;
+        const rowOffset = Math.floor(index / 3);
+        state.iconPositions[item.id] = {
+          x:options.dropPoint.clientX - desktopRect.left - 34 + columnOffset * DESKTOP_GRID.columnWidth,
+          y:options.dropPoint.clientY - desktopRect.top - 38 + rowOffset * DESKTOP_GRID.rowHeight
+        };
+      } else delete state.iconPositions[item.id];
     });
+    if (desktopDrop) {
+      selectedDesktopIds.clear();
+      moving.forEach(item => selectedDesktopIds.add(item.id));
+    }
     saveState();
     refreshFileViews();
+    if (desktopDrop) {
+      const droppedIcons = moving.map(item => {
+        const icon = iconGrid.querySelector(`[data-id="${CSS.escape(item.id)}"]`);
+        const position = state.iconPositions[item.id];
+        return icon && position ? { id:item.id, icon, x:position.x, y:position.y } : null;
+      }).filter(Boolean);
+      snapDesktopIcons(droppedIcons);
+      syncDesktopSelection();
+      saveState();
+    }
     const targetName = targetParentId === "desktop" ? "Desktop" : getItem(targetParentId)?.name || "folder";
     toast(moving.length === 1 ? `${moving[0].name} moved to ${targetName}.` : `${moving.length} items moved to ${targetName}.`);
     return true;
@@ -186,14 +213,33 @@
         syncDesktopSelection();
       });
       button.addEventListener("dblclick", e => { if (!iconWasDragged) { e.stopPropagation(); entry.action(); } });
-      if (!entry.system && !["computer", "recycle"].includes(entry.id)) {
-        button.addEventListener("contextmenu", e => showContext(e, [
-          { label: "Open", action: entry.action },
-          { label: "Rename", action: () => promptRename(entry.id) },
-          "separator",
-          { label: "Move to Recycle Bin", action: () => moveToTrash(entry.id) }
-        ]));
-      }
+      button.addEventListener("contextmenu", e => {
+        if (!selectedDesktopIds.has(entry.id)) { selectedDesktopIds.clear();selectedDesktopIds.add(entry.id);syncDesktopSelection(); }
+        if (entry.id === "computer") {
+          showContext(e, [
+            { label:"Open", action:entry.action },
+            { label:"Open File Explorer", action:() => openExplorer("desktop") },
+            "separator",
+            { label:"Refresh", action:() => { renderDesktop();toast("Desktop refreshed."); } },
+            { label:"Properties", action:openAbout }
+          ]);
+        } else if (entry.id === "recycle") {
+          showContext(e, [
+            { label:"Open", action:entry.action },
+            { label:"Empty Recycle Bin", disabled:!state.trash.length, action:emptyTrash }
+          ]);
+        } else if (!entry.system) {
+          showContext(e, [
+            { label:"Open", action:entry.action },
+            { label:"Open File Location", action:() => openExplorer(entry.parentId || "desktop") },
+            "separator",
+            { label:"Rename", action:() => promptRename(entry.id) },
+            { label:"Move to Recycle Bin", action:() => moveToTrash(entry.id) },
+            "separator",
+            { label:"Properties", action:() => openItemProperties(entry.id) }
+          ]);
+        }
+      });
       iconGrid.append(button);
     });
   }
@@ -255,6 +301,59 @@
       setTimeout(() => item.icon.classList.remove("snapping"), 190);
       state.iconPositions[item.id] = position;
     });
+  }
+
+  function arrangeDesktopIcons(mode = "name") {
+    const iconsToArrange = [...iconGrid.querySelectorAll(".desktop-icon")];
+    iconsToArrange.sort((first, second) => {
+      const firstName = first.querySelector("span")?.textContent || "";
+      const secondName = second.querySelector("span")?.textContent || "";
+      if (mode === "type") {
+        const typeOrder = (first.dataset.entryType || "").localeCompare(second.dataset.entryType || "");
+        if (typeOrder) return typeOrder;
+      }
+      return firstName.localeCompare(secondName, undefined, { numeric:true, sensitivity:"base" });
+    });
+    const { rows } = desktopGridDimensions();
+    iconsToArrange.forEach((icon, index) => {
+      const column = Math.floor(index / rows);
+      const row = index % rows;
+      const position = desktopPositionFromCell(column, row, icon);
+      icon.classList.add("snapping");
+      icon.style.left = `${position.x}px`;
+      icon.style.top = `${position.y}px`;
+      state.iconPositions[icon.dataset.id] = position;
+      setTimeout(() => icon.classList.remove("snapping"), 190);
+    });
+    saveState();
+    toast(`Icons arranged by ${mode}.`);
+  }
+
+  function alignDesktopIcons() {
+    const moving = [...iconGrid.querySelectorAll(".desktop-icon")].map(icon => ({
+      id:icon.dataset.id,
+      icon,
+      x:parseFloat(icon.style.left) || 0,
+      y:parseFloat(icon.style.top) || 0
+    }));
+    snapDesktopIcons(moving);
+    saveState();
+    toast("Desktop icons aligned to the grid.");
+  }
+
+  function selectAllDesktopIcons() {
+    selectedDesktopIds.clear();
+    iconGrid.querySelectorAll(".desktop-icon").forEach(icon => selectedDesktopIds.add(icon.dataset.id));
+    syncDesktopSelection();
+  }
+
+  function toggleDesktopIcons() {
+    state.desktopIconsHidden = !state.desktopIconsHidden;
+    desktop.classList.toggle("desktop-icons-hidden", state.desktopIconsHidden);
+    if (state.desktopIconsHidden) selectedDesktopIds.clear();
+    syncDesktopSelection();
+    saveState();
+    toast(state.desktopIconsHidden ? "Desktop icons hidden." : "Desktop icons shown.");
   }
 
   function beginIconDrag(event, id) {
@@ -353,6 +452,7 @@
     else if (item.type === "chrome") openChrome();
     else if (item.type === "minesweeper") openMinesweeper();
     else if (item.type === "fishing") openFishing();
+    else if (item.type === "snake") openSnake();
     else openNotepad(item.id);
   }
 
@@ -467,7 +567,7 @@
         <button class="tool-button" data-new="text">${svg("document")}<span>New note</span></button>
         <button class="tool-button" data-delete><span class="tool-glyph">×</span><span>Delete</span></button>
       </div>
-      <div class="addressbar"><label>Address</label><div class="address-field">${svg("folder")}<span></span></div></div>
+      <div class="addressbar"><label>Address</label><div class="address-field">${svg("folder")}<nav class="address-trail" aria-label="Current folder path"></nav></div></div>
       <div class="explorer-body">
         <aside class="places"><div class="place-card"><h3>PLACES</h3><button data-place="desktop">${svg("computer")} Desktop</button><button data-place="documents">${svg("folder")} My Documents</button><button data-place="trash">${svg("bin")} Recycle Bin</button></div><div class="place-card"><h3>LITTLE TIP</h3><p style="padding:3px 8px 8px;margin:0;font-size:9px;line-height:1.5">Double-click to open. Right-click for more options.</p></div></aside>
         <section class="file-area"></section>
@@ -520,7 +620,7 @@
             lastSelectedId = itemId;
             syncExplorerSelection();
           }
-          dragIds = [...selectedIds];
+          dragIds = [itemId, ...[...selectedIds].filter(selectedId => selectedId !== itemId)];
           const draggedItem = getItem(itemId);
           ghost = document.createElement("div");
           ghost.className = "file-drag-ghost";
@@ -533,7 +633,7 @@
         dropTarget = resolveDropTarget(pointerEvent.clientX, pointerEvent.clientY, dragIds, currentId);
         if (dropTarget) dropTarget.element.classList.add("drop-target");
       };
-      const up = () => {
+      const up = pointerEvent => {
         document.removeEventListener("pointermove", move);
         document.removeEventListener("pointerup", up);
         clearDropTargets();
@@ -541,7 +641,7 @@
         root.querySelectorAll(".file-item.dragging").forEach(button => button.classList.remove("dragging"));
         if (!moved) return;
         setTimeout(() => { fileWasDragged = false; }, 0);
-        if (dropTarget?.kind === "folder") moveItemsToFolder(dragIds, dropTarget.folderId);
+        if (dropTarget?.kind === "folder") moveItemsToFolder(dragIds, dropTarget.folderId, { dropPoint:{ clientX:pointerEvent.clientX, clientY:pointerEvent.clientY } });
         else if (dropTarget?.kind === "trash") moveToTrash(dragIds, refreshFileViews);
       };
       document.addEventListener("pointermove", move);
@@ -552,6 +652,10 @@
       if (!ids.length) return;
       const afterDelete = () => { selectedIds.clear(); lastSelectedId = null; render(); };
       currentId === "trash" ? permanentlyDelete(ids, afterDelete) : moveToTrash(ids, afterDelete);
+    }
+    function selectAllExplorer() {
+      visibleItems.forEach(item => selectedIds.add(item.id));
+      syncExplorerSelection();
     }
     function beginFileSelection(event) {
       if (event.button !== 0 || event.target.closest(".file-item")) return;
@@ -593,12 +697,41 @@
       document.addEventListener("pointermove", move);
       document.addEventListener("pointerup", up);
     }
-    function pathName(folderId) {
-      if (folderId === "desktop") return "My Computer / Desktop";
-      if (folderId === "trash") return "My Computer / Recycle Bin";
-      const parts = []; let cursor = getItem(folderId);
-      while (cursor) { parts.unshift(cursor.name); cursor = getItem(cursor.parentId); }
-      return `My Computer / ${parts.join(" / ")}`;
+    function pathSegments(folderId) {
+      const segments = [{ id:"desktop", label:"My Computer" }];
+      if (folderId === "desktop") return segments;
+      if (folderId === "trash") return [...segments, { id:"trash", label:"Recycle Bin" }];
+      const chain = [];
+      const visited = new Set();
+      let cursor = getItem(folderId);
+      while (cursor && !visited.has(cursor.id)) {
+        visited.add(cursor.id);
+        chain.unshift({ id:cursor.id, label:cursor.name });
+        cursor = getItem(cursor.parentId);
+      }
+      return [...segments, ...chain];
+    }
+    function renderAddressPath() {
+      const trail = root.querySelector(".address-trail");
+      trail.innerHTML = "";
+      const segments = pathSegments(currentId);
+      segments.forEach((segment, index) => {
+        if (index) {
+          const separator = document.createElement("span");
+          separator.className = "address-separator";
+          separator.textContent = "›";
+          separator.setAttribute("aria-hidden", "true");
+          trail.append(separator);
+        }
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `address-crumb${index === segments.length - 1 ? " current" : ""}`;
+        button.textContent = segment.label;
+        button.title = `Open ${segment.label}`;
+        if (index === segments.length - 1) button.setAttribute("aria-current", "location");
+        button.onclick = event => { event.stopPropagation(); if (segment.id !== currentId) navigate(segment.id); };
+        trail.append(button);
+      });
     }
     function navigate(target, push = true) {
       currentId = target; selectedIds.clear(); lastSelectedId = null;
@@ -612,7 +745,7 @@
       fileArea.dataset.folderId = currentId;
       const visibleIds = new Set(visibleItems.map(item => item.id));
       selectedIds.forEach(itemId => { if (!visibleIds.has(itemId)) selectedIds.delete(itemId); });
-      root.querySelector(".address-field span").textContent = pathName(currentId);
+      renderAddressPath();
       root.querySelector("[data-nav=back]").disabled = historyIndex <= 0;
       root.querySelector("[data-nav=up]").disabled = currentId === "desktop" || currentId === "trash";
       root.querySelector("[data-new=folder]").disabled = currentId === "trash";
@@ -629,13 +762,33 @@
           if(!selectedIds.has(item.id)){selectedIds.clear();selectedIds.add(item.id);lastSelectedId=item.id;syncExplorerSelection();}
           const chosen=[...selectedIds];
           showContext(e, currentId === "trash" ? [
-            { label:`Restore${chosen.length>1?` ${chosen.length} items`:""}`, action:() => { restoreItems(chosen); selectedIds.clear(); render(); } }, { label:`Delete permanently${chosen.length>1?` (${chosen.length})`:""}`, action:() => permanentlyDelete(chosen,()=>{selectedIds.clear();render();}) }
-          ] : [ { label:"Open", action:() => item.type === "folder" ? navigate(item.id) : openItem(item.id) }, ...(chosen.length===1?[{ label:"Rename", action:() => promptRename(item.id, render) }]:[]), "separator", { label:`Move to Recycle Bin${chosen.length>1?` (${chosen.length})`:""}`, action:() => moveToTrash(chosen,()=>{selectedIds.clear();render();}) } ]);
+            { label:`Restore${chosen.length>1?` ${chosen.length} items`:""}`, action:() => { restoreItems(chosen); selectedIds.clear(); render(); } },
+            { label:`Delete permanently${chosen.length>1?` (${chosen.length})`:""}`, action:() => permanentlyDelete(chosen,()=>{selectedIds.clear();render();}) },
+            ...(chosen.length===1?["separator",{label:"Properties",action:() => openItemProperties(item.id)}]:[])
+          ] : [
+            { label:"Open", action:() => item.type === "folder" ? navigate(item.id) : openItem(item.id) },
+            ...(chosen.length===1?[{ label:"Rename", action:() => promptRename(item.id, render) }]:[]),
+            "separator",
+            { label:`Move to Recycle Bin${chosen.length>1?` (${chosen.length})`:""}`, action:() => moveToTrash(chosen,()=>{selectedIds.clear();render();}) },
+            ...(chosen.length===1?["separator",{ label:"Properties", action:() => openItemProperties(item.id) }]:[])
+          ]);
         });
         grid.append(button);
       });
       fileArea.onpointerdown = beginFileSelection;
-      fileArea.oncontextmenu = e => showContext(e, currentId === "trash" ? [{label:"Empty Recycle Bin", action:() => emptyTrash(render)}] : [{label:"New Folder",action:() => promptCreate("folder", currentId, render)},{label:"New Text File",action:() => promptCreate("text",currentId,render)}]);
+      fileArea.oncontextmenu = e => showContext(e, currentId === "trash" ? [
+        {label:"Restore All",disabled:!visibleItems.length,action:() => {restoreItems(visibleItems.map(item=>item.id));render();}},
+        {label:"Empty Recycle Bin",disabled:!state.trash.length,action:() => emptyTrash(render)},
+        "separator",
+        {label:"Refresh",action:render}
+      ] : [
+        {label:"New Folder",action:() => promptCreate("folder", currentId, render)},
+        {label:"New Text Document",action:() => promptCreate("text",currentId,render)},
+        "separator",
+        {label:"Select All",shortcut:"Ctrl+A",disabled:!visibleItems.length,action:selectAllExplorer},
+        {label:"Refresh",action:render},
+        ...(currentId !== "desktop" && getItem(currentId) ? ["separator",{label:"Folder Properties",action:() => openItemProperties(currentId)}] : [])
+      ]);
       syncExplorerSelection();
       const win = windows.get(id); if (win) updateWindowTitle(id, currentId === "trash" ? "Recycle Bin" : `${currentId === "desktop" ? "My Computer" : getItem(currentId)?.name || "Explorer"}`);
     }
@@ -644,7 +797,7 @@
     root.querySelectorAll("[data-place]").forEach(btn => btn.onclick = () => navigate(btn.dataset.place));
     root.querySelectorAll("[data-new]").forEach(btn => btn.onclick = () => promptCreate(btn.dataset.new, currentId, render));
     root.querySelector("[data-delete]").onclick = deleteExplorerSelection;
-    root.addEventListener("keydown",event=>{if(event.key==="Delete"){event.preventDefault();deleteExplorerSelection();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="a"){event.preventDefault();visibleItems.forEach(item=>selectedIds.add(item.id));syncExplorerSelection();}});
+    root.addEventListener("keydown",event=>{if(event.key==="Delete"){event.preventDefault();deleteExplorerSelection();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="a"){event.preventDefault();selectAllExplorer();}});
     root.querySelector("[data-menu=file]").onclick = e => showContext(e, [{label:"New Folder",action:() => promptCreate("folder",currentId,render)},{label:"New Text File",action:() => promptCreate("text",currentId,render)},"separator",{label:"Close",action:() => closeWindow(id)}]);
     explorerRefreshers.add(render);
     createWindow({ id, title: startId === "trash" ? "Recycle Bin" : "My Computer", icon: startId === "trash" ? "bin" : "computer", content: root, onClose:()=>{explorerRefreshers.delete(render);return true;} });
@@ -698,6 +851,24 @@
     form.onsubmit=e=>{e.preventDefault();const value=input.value.trim();if(!value)return;item.name=uniqueName(value,item.parentId,item.type,state.items.filter(i=>i.id!==id));saveState();renderDesktop();callback();closeWindow(dialogId);toast("Item renamed.");};
   }
 
+  function openItemProperties(itemId) {
+    const item = getItem(itemId); if (!item) return;
+    const windowId = `properties-${item.id}`;
+    if (windows.has(windowId)) return restoreAndFocus(windowId);
+    const typeNames = { folder:"File folder", text:"Text document", chrome:"Application shortcut", minesweeper:"Game shortcut", fishing:"Game shortcut", snake:"Game shortcut" };
+    const parentName = item.parentId === "desktop" ? "Desktop" : item.parentId === "trash" ? "Recycle Bin" : getItem(item.parentId)?.name || "Desktop";
+    const created = item.created ? new Date(item.created).toLocaleString() : "Unknown";
+    const modified = item.modified ? new Date(item.modified).toLocaleString() : "Not modified";
+    const detail = item.type === "folder"
+      ? `${state.items.filter(candidate => candidate.parentId === item.id).length} item${state.items.filter(candidate => candidate.parentId === item.id).length === 1 ? "" : "s"}`
+      : item.type === "text" ? `${new Blob([item.content || ""]).size} bytes` : "Afterglow desktop application";
+    const content = document.createElement("div");
+    content.className = "properties-wrap";
+    content.innerHTML = `<div class="properties-heading">${svg(item.type === "text" ? "document" : item.type)}<div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(typeNames[item.type] || "Desktop item")}</span></div></div><dl><div><dt>Type:</dt><dd>${escapeHtml(typeNames[item.type] || "Desktop item")}</dd></div><div><dt>Location:</dt><dd>${escapeHtml(parentName)}</dd></div><div><dt>Size / contents:</dt><dd>${escapeHtml(detail)}</dd></div><div><dt>Created:</dt><dd>${escapeHtml(created)}</dd></div><div><dt>Modified:</dt><dd>${escapeHtml(modified)}</dd></div></dl><div class="dialog-actions"><button class="dialog-button primary" type="button">OK</button></div>`;
+    createWindow({id:windowId,title:`${item.name} Properties`,icon:item.type === "text" ? "document" : item.type,width:440,height:355,content});
+    content.querySelector("button").onclick = () => closeWindow(windowId);
+  }
+
   function descendants(id, collection) { const found=[]; const walk=parent=>collection.filter(i=>i.parentId===parent).forEach(i=>{found.push(i);walk(i.id)}); walk(id); return found; }
   function confirmDesktop({title,message,detail="",confirmLabel="Confirm",icon="bin",danger=false,onConfirm}) {
     const dialogId=`confirm-${uid()}`;
@@ -742,17 +913,48 @@
 
   function showContext(event, entries) {
     event.preventDefault(); event.stopPropagation(); contextMenu.innerHTML="";
-    entries.forEach(entry=>{if(entry==="separator"){contextMenu.append(document.createElement("hr"));return;}const button=document.createElement("button");button.textContent=entry.label;button.onclick=()=>{hideContext();entry.action();};contextMenu.append(button);});
-    contextMenu.classList.remove("hidden"); const x=Math.min(event.clientX,window.innerWidth-200),y=Math.min(event.clientY,window.innerHeight-contextMenu.offsetHeight-52);contextMenu.style.left=`${Math.max(4,x)}px`;contextMenu.style.top=`${Math.max(4,y)}px`;
+    entries.forEach(entry=>{
+      if(entry==="separator"){contextMenu.append(document.createElement("hr"));return;}
+      const button=document.createElement("button");
+      const check=document.createElement("span");check.className="context-check";check.textContent=entry.checked?"✓":"";
+      const label=document.createElement("span");label.className="context-label";label.textContent=entry.label;
+      button.append(check,label);
+      if(entry.shortcut){const shortcut=document.createElement("span");shortcut.className="context-shortcut";shortcut.textContent=entry.shortcut;button.append(shortcut);}
+      button.disabled=Boolean(entry.disabled);
+      button.onclick=()=>{if(button.disabled)return;hideContext();entry.action();};
+      contextMenu.append(button);
+    });
+    contextMenu.classList.remove("hidden"); const x=Math.min(event.clientX,window.innerWidth-contextMenu.offsetWidth-6),y=Math.min(event.clientY,window.innerHeight-contextMenu.offsetHeight-52);contextMenu.style.left=`${Math.max(4,x)}px`;contextMenu.style.top=`${Math.max(4,y)}px`;
   }
   function hideContext(){contextMenu.classList.add("hidden");}
   function toast(message){const el=document.createElement("div");el.className="toast";el.textContent=message;document.querySelector("#toast-region").append(el);setTimeout(()=>el.remove(),2600);}
 
+  function desktopContextEntries() {
+    return [
+      {label:"Open File Explorer",action:() => openExplorer("desktop")},
+      "separator",
+      {label:"Arrange Icons by Name",disabled:state.desktopIconsHidden,action:() => arrangeDesktopIcons("name")},
+      {label:"Arrange Icons by Type",disabled:state.desktopIconsHidden,action:() => arrangeDesktopIcons("type")},
+      {label:"Align Icons to Grid",disabled:state.desktopIconsHidden,action:alignDesktopIcons},
+      {label:"Show Desktop Icons",checked:!state.desktopIconsHidden,action:toggleDesktopIcons},
+      "separator",
+      {label:"Select All",shortcut:"Ctrl+A",disabled:state.desktopIconsHidden,action:selectAllDesktopIcons},
+      {label:"Refresh",shortcut:"F5",action:() => {renderDesktop();toast("Desktop refreshed.");}},
+      "separator",
+      {label:"New Folder",action:() => promptCreate("folder","desktop")},
+      {label:"New Text Document",action:() => promptCreate("text","desktop")},
+      ...(state.trash.length ? ["separator",{label:"Empty Recycle Bin",action:emptyTrash}] : []),
+      "separator",
+      {label:"About Afterglow OS",action:openAbout},
+      {label:"Rest Mode",action:restMode}
+    ];
+  }
+
   desktop.addEventListener("pointerdown", beginDesktopSelection);
   desktop.addEventListener("click", e=>{hideContext();if(!e.target.closest("#start-menu,#start-button")){startMenu.classList.add("hidden");startButton.classList.remove("active");startButton.setAttribute("aria-expanded","false");}});
-  desktop.addEventListener("contextmenu", e=>{if(e.target===desktop || e.target.classList.contains("sky-grain") || e.target.classList.contains("landscape"))showContext(e,[{label:"New Folder",action:()=>promptCreate("folder","desktop")},{label:"New Text File",action:()=>promptCreate("text","desktop")},"separator",{label:"Open My Computer",action:()=>openExplorer("desktop")},{label:"Refresh",action:()=>{renderDesktop();toast("Desktop refreshed.");}}]);});
+  desktop.addEventListener("contextmenu", e=>{if(e.target===desktop || e.target.closest(".rain-wallpaper,.sky-grain,.sun-haze,.landscape,.power-lines"))showContext(e,desktopContextEntries());});
   startButton.onclick=e=>{e.stopPropagation();const open=startMenu.classList.toggle("hidden")===false;startButton.classList.toggle("active",open);startButton.setAttribute("aria-expanded",String(open));};
-  startMenu.querySelectorAll("[data-start-action]").forEach(btn=>btn.onclick=()=>{const action=btn.dataset.startAction;startMenu.classList.add("hidden");if(action==="computer")openExplorer("desktop");if(action==="notes")openNotepad();if(action==="music")togglePlayer();if(action==="minesweeper")openMinesweeper();if(action==="fishing")openFishing();if(action==="about")openAbout();if(action==="sleep")restMode();});
+  startMenu.querySelectorAll("[data-start-action]").forEach(btn=>btn.onclick=()=>{const action=btn.dataset.startAction;startMenu.classList.add("hidden");if(action==="computer")openExplorer("desktop");if(action==="notes")openNotepad();if(action==="music")togglePlayer();if(action==="minesweeper")openMinesweeper();if(action==="fishing")openFishing();if(action==="snake")openSnake();if(action==="about")openAbout();if(action==="sleep")restMode();});
 
   function openMinesweeper(){
     if(windows.has("minesweeper"))return restoreAndFocus("minesweeper");
@@ -765,6 +967,13 @@
     if(windows.has("fishing"))return restoreAndFocus("fishing");
     const game=window.createAfterglowFishing();
     createWindow({id:"fishing",title:"Rainy Lake Fishing",icon:"fishing",width:940,height:660,content:game.element,onClose:()=>{game.destroy();return true;}});
+    setTimeout(()=>game.focus(),0);
+  }
+
+  function openSnake(){
+    if(windows.has("snake"))return restoreAndFocus("snake");
+    const game=window.createAfterglowSnake();
+    createWindow({id:"snake",title:"Neon Snake",icon:"snake",width:900,height:650,content:game.element,onClose:()=>{game.destroy();return true;}});
     setTimeout(()=>game.focus(),0);
   }
 
@@ -807,7 +1016,15 @@
 
   function updateClock(){const now=new Date();document.querySelector("#clock").textContent=`${now.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}\n${now.toLocaleDateString([],{month:"short",day:"numeric"})}`;}
   updateClock();setInterval(updateClock,30000);
-  document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideContext();startMenu.classList.add("hidden");}if(e.ctrlKey&&e.key.toLowerCase()==="s"){const active=[...windows.values()].find(w=>!w.element.classList.contains("inactive")&&!w.element.classList.contains("minimized"));const save=active?.element.querySelector("[data-note=save]");if(save){e.preventDefault();save.click();}}});
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){hideContext();startMenu.classList.add("hidden");}
+    if(e.ctrlKey&&e.key.toLowerCase()==="s"){const active=[...windows.values()].find(w=>!w.element.classList.contains("inactive")&&!w.element.classList.contains("minimized"));const save=active?.element.querySelector("[data-note=save]");if(save){e.preventDefault();save.click();}}
+    const target=e.target instanceof Element?e.target:null;
+    const desktopCommand=!target?.closest(".app-window,#start-menu,.now-playing,.taskbar,input,textarea");
+    if(desktopCommand&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"&&!state.desktopIconsHidden){e.preventDefault();selectAllDesktopIcons();}
+    if(desktopCommand&&e.key==="F5"){e.preventDefault();renderDesktop();toast("Desktop refreshed.");}
+    if(desktopCommand&&e.key==="Delete"&&selectedDesktopIds.size){e.preventDefault();moveToTrash([...selectedDesktopIds],()=>{selectedDesktopIds.clear();syncDesktopSelection();});}
+  });
   window.addEventListener("resize",()=>windows.forEach(win=>{const r=win.element.getBoundingClientRect();if(r.left>window.innerWidth-80)win.element.style.left=`${Math.max(0,window.innerWidth-r.width)}px`;if(r.top>window.innerHeight-70)win.element.style.top="6px";}));
 
   renderDesktop();
