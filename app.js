@@ -16,6 +16,15 @@
   let iconWasDragged = false;
   const windows = new Map();
   const explorerRefreshers = new Set();
+  const DEFAULT_SETTINGS = Object.freeze({ rainOpacity:20, rainIntensity:55, accent:"coral", interfaceSound:"soft", iconSpacing:"normal", clockFormat:"12", autoArrange:false });
+  const ACCENTS = {
+    coral:{ color:"#df7379", dark:"#a85159", soft:"#f0a2a5" },
+    aqua:{ color:"#56b8ba", dark:"#34797d", soft:"#9bddda" },
+    violet:{ color:"#a786d8", dark:"#695293", soft:"#cbb7ed" },
+    amber:{ color:"#dfa957", dark:"#956e34", soft:"#f2cd89" },
+    mint:{ color:"#69b58e", dark:"#417b61", soft:"#a9d7bd" }
+  };
+  const GRID_PRESETS = { compact:{ columnWidth:64,rowHeight:80 }, normal:{ columnWidth:72,rowHeight:84 }, roomy:{ columnWidth:84,rowHeight:94 } };
   const DESKTOP_GRID = { originX: 10, originY: 10, columnWidth: 72, rowHeight: 80 };
   const APP_SHORTCUTS = [
     { id: "google-chrome", name: "Google Chrome", type: "chrome", parentId: "desktop", shortcut: true, created: Date.now() - 82000000 },
@@ -23,7 +32,10 @@
     { id: "rainy-lake-fishing", name: "Rainy Lake Fishing", type: "fishing", parentId: "desktop", shortcut: true, created: Date.now() - 80000000 },
     { id: "neon-snake", name: "Neon Snake", type: "snake", parentId: "desktop", shortcut: true, created: Date.now() - 79000000 },
     { id: "rainy-motel-gallery", name: "Rainy Motel Gallery", type: "gallery", parentId: "desktop", shortcut: true, created: Date.now() - 78000000 },
-    { id: "afterglow-calculator", name: "Calculator", type: "calculator", parentId: "desktop", shortcut: true, created: Date.now() - 77000000 }
+    { id: "afterglow-calculator", name: "Calculator", type: "calculator", parentId: "desktop", shortcut: true, created: Date.now() - 77000000 },
+    { id: "afterglow-control-panel", name: "Control Panel", type: "controlpanel", parentId: "desktop", shortcut: true, created: Date.now() - 76000000 },
+    { id: "afterglow-neon-paint", name: "Neon Paint", type: "paint", parentId: "desktop", shortcut: true, created: Date.now() - 75000000 },
+    { id: "afterglow-solitaire", name: "Afterglow Solitaire", type: "solitaire", parentId: "desktop", shortcut: true, created: Date.now() - 74000000 }
   ];
 
   const MOTEL_PHOTOS = [
@@ -37,7 +49,7 @@
 
   const icons = {
     computer: "#i-computer", folder: "#i-folder", note: "#i-note",
-    document: "#i-document", bin: "#i-bin", headphones: "#i-headphones", minesweeper: "#i-minesweeper", fishing: "#i-fishing", snake: "#i-snake", chrome: "#i-chrome", gallery: "#i-gallery", calculator: "#i-calculator"
+    document: "#i-document", bin: "#i-bin", headphones: "#i-headphones", minesweeper: "#i-minesweeper", fishing: "#i-fishing", snake: "#i-snake", chrome: "#i-chrome", gallery: "#i-gallery", calculator: "#i-calculator", controlpanel:"#i-controlpanel", paint:"#i-paint", solitaire:"#i-solitaire"
   };
 
   const seedState = {
@@ -49,17 +61,50 @@
       { id: "thoughts", name: "small thoughts.txt", type: "text", parentId: "journal", content: "buy oranges\nwater the plants\nfinish that song\n\nremember: not every day has to be productive.", created: Date.now() - 2500000, modified: Date.now() - 2500000 }
     ],
     trash: [],
-    shortcutSchema: 3
+    shortcutSchema: 4,
+    settings: { ...DEFAULT_SETTINGS }
   };
 
   let state = loadState();
   state.iconPositions ||= {};
+  state.settings = normalizeSettings(state.settings);
   if (migrateAppShortcuts()) saveState();
   desktop.classList.toggle("desktop-icons-hidden", Boolean(state.desktopIconsHidden));
-  applyWallpaper();
+  applyDesktopSettings({ arrange:false });
 
-  function applyWallpaper() {
-    const source = state.wallpaper || "assets/photos/afterglow-wallpaper.png";
+  function normalizeSettings(settings = {}) {
+    const merged = { ...DEFAULT_SETTINGS,...settings };
+    merged.rainOpacity = Math.max(0,Math.min(60,Number(merged.rainOpacity) || 0));
+    merged.rainIntensity = Math.max(0,Math.min(100,Number(merged.rainIntensity) || 0));
+    if (!ACCENTS[merged.accent]) merged.accent = DEFAULT_SETTINGS.accent;
+    if (!GRID_PRESETS[merged.iconSpacing]) merged.iconSpacing = DEFAULT_SETTINGS.iconSpacing;
+    if (!["12","24"].includes(String(merged.clockFormat))) merged.clockFormat = DEFAULT_SETTINGS.clockFormat;
+    if (!("interfaceSound" in settings) && "interfaceSounds" in settings) merged.interfaceSound = settings.interfaceSounds === false ? "off" : "soft";
+    if (!["soft","classic","off"].includes(merged.interfaceSound)) merged.interfaceSound = DEFAULT_SETTINGS.interfaceSound;
+    delete merged.interfaceSounds;
+    merged.autoArrange = Boolean(merged.autoArrange);
+    return merged;
+  }
+
+  function applyDesktopSettings({ settings = state.settings, wallpaper = state.wallpaper, arrange = false, applyLayout = true } = {}) {
+    const accent = ACCENTS[settings.accent];
+    const spacing = GRID_PRESETS[settings.iconSpacing];
+    if (applyLayout) Object.assign(DESKTOP_GRID,spacing);
+    document.documentElement.style.setProperty("--rust",accent.color);
+    document.documentElement.style.setProperty("--accent-dark",accent.dark);
+    document.documentElement.style.setProperty("--accent-soft",accent.soft);
+    if (applyLayout) document.documentElement.style.setProperty("--desktop-icon-width",`${Math.max(60,spacing.columnWidth - 4)}px`);
+    document.documentElement.style.setProperty("--rain-opacity",String(settings.rainOpacity / 100));
+    document.documentElement.style.setProperty("--rain-scale",String(.72 + settings.rainIntensity / 180));
+    document.documentElement.style.setProperty("--rain-speed",`${Math.max(.45,2.2 - settings.rainIntensity * .016)}s`);
+    desktop.dataset.rainIntensity = settings.rainOpacity === 0 ? "off" : settings.rainIntensity === 0 ? "still" : settings.rainIntensity < 34 ? "low" : settings.rainIntensity > 72 ? "high" : "medium";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content",accent.dark);
+    applyWallpaper(wallpaper);
+    if (applyLayout && (arrange || settings.autoArrange) && iconGrid.childElementCount) requestAnimationFrame(() => arrangeDesktopIcons("name",{ silent:true }));
+  }
+
+  function applyWallpaper(wallpaper = state.wallpaper) {
+    const source = wallpaper || "assets/photos/afterglow-wallpaper.png";
     desktop.style.backgroundImage = `linear-gradient(180deg, rgba(6, 27, 31, .04), rgba(5, 18, 21, .13)), url("${source.replace(/"/g, "%22")}")`;
   }
 
@@ -76,14 +121,15 @@
     const documents = [...state.items, ...state.trash].find(item => item.id === "documents");
     if (documents?.system) { delete documents.system; changed = true; }
     const previousSchema = Number(state.shortcutSchema) || 0;
-    if (previousSchema < 3) {
+    if (previousSchema < 4) {
       const additions = previousSchema < 1 ? APP_SHORTCUTS : previousSchema < 2
         ? APP_SHORTCUTS.filter(shortcut => ["neon-snake","rainy-motel-gallery","afterglow-calculator"].includes(shortcut.id))
-        : APP_SHORTCUTS.filter(shortcut => ["rainy-motel-gallery","afterglow-calculator"].includes(shortcut.id));
+        : previousSchema < 3 ? APP_SHORTCUTS.filter(shortcut => ["rainy-motel-gallery","afterglow-calculator"].includes(shortcut.id))
+        : APP_SHORTCUTS.filter(shortcut => ["afterglow-control-panel","afterglow-neon-paint","afterglow-solitaire"].includes(shortcut.id));
       additions.forEach(shortcut => {
         if (![...state.items, ...state.trash].some(item => item.id === shortcut.id)) { state.items.push({ ...shortcut }); changed = true; }
       });
-      state.shortcutSchema = 3;
+      state.shortcutSchema = 4;
       changed = true;
     }
     return changed;
@@ -160,10 +206,10 @@
       moving.forEach(item => selectedDesktopIds.add(item.id));
     }
     saveState();
-    refreshFileViews();
     if (desktopDrop) {
       placeDesktopItems(moving.map(item => item.id), dropPosition, { select:true });
-    }
+      explorerRefreshers.forEach(refresh => refresh());
+    } else refreshFileViews();
     const targetName = targetParentId === "desktop" ? "Desktop" : getItem(targetParentId)?.name || "folder";
     toast(moving.length === 1 ? `${moving[0].name} moved to ${targetName}.` : `${moving.length} items moved to ${targetName}.`);
     return true;
@@ -194,7 +240,7 @@
     return null;
   }
 
-  function renderDesktop() {
+  function renderDesktop(options = {}) {
     const dynamic = state.items.filter(item => item.parentId === "desktop");
     const entries = [
       { id: "computer", name: "My Computer", type: "computer", action: () => openExplorer("desktop") },
@@ -252,6 +298,7 @@
       });
       iconGrid.append(button);
     });
+    if (state.settings.autoArrange && !options.skipAutoArrange) requestAnimationFrame(() => arrangeDesktopIcons("name",{ silent:true }));
   }
 
   function syncDesktopSelection() {
@@ -298,13 +345,14 @@
     itemIds.forEach((id, index) => {
       state.iconPositions[id] = { x:desiredPosition.x + (index % 3) * 4, y:desiredPosition.y + Math.floor(index / 3) * 4 };
     });
-    renderDesktop();
+    renderDesktop({ skipAutoArrange:true });
     const moving = itemIds.map(id => {
       const icon = iconGrid.querySelector(`[data-id="${CSS.escape(id)}"]`);
       const position = state.iconPositions[id];
       return icon ? { id, icon, x:position.x, y:position.y } : null;
     }).filter(Boolean);
-    snapDesktopIcons(moving);
+    if (state.settings.autoArrange) arrangeDesktopIcons("name",{ silent:true });
+    else snapDesktopIcons(moving);
     if (options.select) {
       selectedDesktopIds.clear();
       itemIds.forEach(id => selectedDesktopIds.add(id));
@@ -342,7 +390,7 @@
     });
   }
 
-  function arrangeDesktopIcons(mode = "name") {
+  function arrangeDesktopIcons(mode = "name", options = {}) {
     const iconsToArrange = [...iconGrid.querySelectorAll(".desktop-icon")];
     iconsToArrange.sort((first, second) => {
       const firstName = first.querySelector("span")?.textContent || "";
@@ -365,10 +413,10 @@
       setTimeout(() => icon.classList.remove("snapping"), 190);
     });
     saveState();
-    toast(`Icons arranged by ${mode}.`);
+    if (!options.silent) toast(`Icons arranged by ${mode}.`);
   }
 
-  function alignDesktopIcons() {
+  function alignDesktopIcons(options = {}) {
     const moving = [...iconGrid.querySelectorAll(".desktop-icon")].map(icon => ({
       id:icon.dataset.id,
       icon,
@@ -377,7 +425,7 @@
     }));
     snapDesktopIcons(moving);
     saveState();
-    toast("Desktop icons aligned to the grid.");
+    if (!options.silent) toast("Desktop icons aligned to the grid.");
   }
 
   function selectAllDesktopIcons() {
@@ -433,10 +481,14 @@
       if (!moved) return;
       iconWasDragged = true;
       if (dropTarget?.kind === "folder") {
-        if (moveItemsToFolder(moving.map(item => item.id), dropTarget.folderId)) return;
+        if (moveItemsToFolder(moving.map(item => item.id), dropTarget.folderId, { dropPoint:{ clientX:pointerEvent.clientX,clientY:pointerEvent.clientY } })) return;
       } else if (dropTarget?.kind === "trash") {
         moveToTrash(moving.map(item => item.id), refreshFileViews);
-        renderDesktop();
+        renderDesktop({ skipAutoArrange:true });
+        return;
+      }
+      if (state.settings.autoArrange) {
+        arrangeDesktopIcons("name",{ silent:true });
         return;
       }
       snapDesktopIcons(moving);
@@ -494,6 +546,9 @@
     else if (item.type === "snake") openSnake();
     else if (item.type === "gallery") openGallery();
     else if (item.type === "calculator") openCalculator();
+    else if (item.type === "controlpanel") openControlPanel();
+    else if (item.type === "paint") openPaint();
+    else if (item.type === "solitaire") openSolitaire();
     else openNotepad(item.id);
   }
 
@@ -518,9 +573,11 @@
   function createWindow({ id, title, icon = "document", width = 720, height = 480, content, onClose }) {
     if (windows.has(id)) { restoreAndFocus(id); return windows.get(id).element; }
     const element = windowTemplate.content.firstElementChild.cloneNode(true);
-    const safeLeft = Math.max(8, Math.min(window.innerWidth - width - 20, 110 + windowOffset));
-    const safeTop = Math.max(8, Math.min(window.innerHeight - height - 60, 48 + windowOffset));
-    element.style.cssText = `width:${width}px;height:${height}px;left:${safeLeft}px;top:${safeTop}px;z-index:${++zIndex}`;
+    const safeWidth = Math.max(330,Math.min(width,window.innerWidth - 16));
+    const safeHeight = Math.max(240,Math.min(height,window.innerHeight - DESKTOP_GRID.originY - 56));
+    const safeLeft = Math.max(8, Math.min(window.innerWidth - safeWidth - 8, 110 + windowOffset));
+    const safeTop = Math.max(8, Math.min(window.innerHeight - safeHeight - 52, 48 + windowOffset));
+    element.style.cssText = `width:${safeWidth}px;height:${safeHeight}px;left:${safeLeft}px;top:${safeTop}px;z-index:${++zIndex}`;
     windowOffset = (windowOffset + 28) % 170;
     element.dataset.windowId = id;
     element.querySelector(".window-title").textContent = title;
@@ -578,7 +635,7 @@
     handle.addEventListener("pointerdown", e => {
       e.preventDefault(); e.stopPropagation();
       const rect = element.getBoundingClientRect(); const sx = e.clientX, sy = e.clientY;
-      const move = ev => { element.style.width = `${Math.max(330, rect.width + ev.clientX - sx)}px`; element.style.height = `${Math.max(240, rect.height + ev.clientY - sy)}px`; };
+      const move = ev => { element.style.width = `${Math.min(window.innerWidth - rect.left - 4,Math.max(330, rect.width + ev.clientX - sx))}px`; element.style.height = `${Math.min(window.innerHeight - rect.top - 52,Math.max(240, rect.height + ev.clientY - sy))}px`; };
       const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
       document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
     });
@@ -890,7 +947,7 @@
       const item = {id:uid(),name:uniqueName(value,parentId,type),type,parentId,created:Date.now()};
       if (type === "text") { item.content=content; item.modified=Date.now(); }
       state.items.push(item);
-      if (parentId === "desktop" && options.dropPoint) {
+      if (parentId === "desktop" && options.dropPoint && !state.settings.autoArrange) {
         placeDesktopItems([item.id], desktopPositionFromPointer(options.dropPoint), { select:true });
       } else { saveState();renderDesktop(); }
       closeWindow(dialogId); callback(item); if (afterCreate) afterCreate(item); toast(`${item.name} created.`);
@@ -910,7 +967,7 @@
     const item = getItem(itemId); if (!item) return;
     const windowId = `properties-${item.id}`;
     if (windows.has(windowId)) return restoreAndFocus(windowId);
-    const typeNames = { folder:"File folder", text:"Text document", chrome:"Application shortcut", minesweeper:"Game shortcut", fishing:"Game shortcut", snake:"Game shortcut" };
+    const typeNames = { folder:"File folder", text:"Text document", chrome:"Application shortcut", minesweeper:"Game shortcut", fishing:"Game shortcut", snake:"Game shortcut", gallery:"Application shortcut", calculator:"Application shortcut", controlpanel:"System shortcut", paint:"Application shortcut", solitaire:"Game shortcut" };
     const parentName = item.parentId === "desktop" ? "Desktop" : item.parentId === "trash" ? "Recycle Bin" : getItem(item.parentId)?.name || "Desktop";
     const created = item.created ? new Date(item.created).toLocaleString() : "Unknown";
     const modified = item.modified ? new Date(item.modified).toLocaleString() : "Not modified";
@@ -984,6 +1041,33 @@
   function hideContext(){contextMenu.classList.add("hidden");}
   function toast(message){const el=document.createElement("div");el.className="toast";el.textContent=message;document.querySelector("#toast-region").append(el);setTimeout(()=>el.remove(),2600);}
 
+  let interfaceAudioContext = null;
+  function playInterfaceSound(kind = "click", theme = state.settings.interfaceSound) {
+    if (theme === "off") return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      interfaceAudioContext ||= new AudioContext();
+      if (interfaceAudioContext.state === "suspended") interfaceAudioContext.resume().catch(() => {});
+      const now = interfaceAudioContext.currentTime;
+      const oscillator = interfaceAudioContext.createOscillator();
+      const gain = interfaceAudioContext.createGain();
+      const classic = theme === "classic";
+      const frequencies = classic
+        ? { click:[660,510], confirm:[590,880], open:[440,660] }
+        : { click:[390,330], confirm:[430,610], open:[310,440] };
+      const [start,end] = frequencies[kind] || frequencies.click;
+      oscillator.type = classic ? "square" : "sine";
+      oscillator.frequency.setValueAtTime(start,now);
+      oscillator.frequency.exponentialRampToValueAtTime(end,now + (classic ? .045 : .075));
+      gain.gain.setValueAtTime(.0001,now);
+      gain.gain.exponentialRampToValueAtTime(classic ? .026 : .019,now + .006);
+      gain.gain.exponentialRampToValueAtTime(.0001,now + (classic ? .06 : .1));
+      oscillator.connect(gain).connect(interfaceAudioContext.destination);
+      oscillator.start(now);oscillator.stop(now + (classic ? .065 : .105));
+    } catch (_) { /* audio feedback is optional */ }
+  }
+
   function desktopContextEntries(dropPoint) {
     return [
       {label:"Open File Explorer",action:() => openExplorer("desktop")},
@@ -992,6 +1076,7 @@
       {label:"Arrange Icons by Type",disabled:state.desktopIconsHidden,action:() => arrangeDesktopIcons("type")},
       {label:"Align Icons to Grid",disabled:state.desktopIconsHidden,action:alignDesktopIcons},
       {label:"Show Desktop Icons",checked:!state.desktopIconsHidden,action:toggleDesktopIcons},
+      {label:"Automatically Arrange Icons",checked:state.settings.autoArrange,disabled:state.desktopIconsHidden,action:() => {state.settings.autoArrange=!state.settings.autoArrange;saveState();if(state.settings.autoArrange)arrangeDesktopIcons("name",{silent:true});toast(`Automatic icon arrangement ${state.settings.autoArrange?"enabled":"disabled"}.`);}},
       "separator",
       {label:"Select All",shortcut:"Ctrl+A",disabled:state.desktopIconsHidden,action:selectAllDesktopIcons},
       {label:"Refresh",shortcut:"F5",action:() => {renderDesktop();toast("Desktop refreshed.");}},
@@ -1000,6 +1085,7 @@
       {label:"New Text Document",action:() => promptCreate("text","desktop",()=>{},"",null,{dropPoint})},
       ...(state.trash.length ? ["separator",{label:"Empty Recycle Bin",action:emptyTrash}] : []),
       "separator",
+      {label:"Control Panel",action:openControlPanel},
       {label:"About Afterglow OS",action:openAbout},
       {label:"Rest Mode",action:restMode}
     ];
@@ -1023,6 +1109,9 @@
     if(action==="snake")openSnake();
     if(action==="gallery")openGallery();
     if(action==="calculator")openCalculator();
+    if(action==="controlpanel")openControlPanel();
+    if(action==="paint")openPaint();
+    if(action==="solitaire")openSolitaire();
     if(action==="about")openAbout();
     if(action==="sleep")restMode();
   }
@@ -1070,6 +1159,66 @@
     const game=window.createAfterglowSnake();
     createWindow({id:"snake",title:"Neon Snake",icon:"snake",width:900,height:650,content:game.element,onClose:()=>{game.destroy();return true;}});
     setTimeout(()=>game.focus(),0);
+  }
+
+  function openPaint() {
+    if (windows.has("paint")) return restoreAndFocus("paint");
+    const paint = window.createAfterglowPaint();
+    let confirmedClose = false;
+    createWindow({ id:"paint",title:"Neon Paint",icon:"paint",width:980,height:680,content:paint.element,onClose:() => {
+      if (paint.isDirty() && !confirmedClose) {
+        confirmDesktop({ title:"Neon Paint",message:"Close Neon Paint without saving?",detail:"Your current canvas has changes that have not been downloaded as a PNG.",confirmLabel:"Close Without Saving",icon:"paint",danger:true,onConfirm:() => { confirmedClose=true;closeWindow("paint"); } });
+        return false;
+      }
+      paint.destroy();return true;
+    } });
+    setTimeout(() => paint.focus(),0);
+  }
+
+  function openSolitaire() {
+    if (windows.has("solitaire")) return restoreAndFocus("solitaire");
+    const game = window.createAfterglowSolitaire();
+    createWindow({ id:"solitaire",title:"Afterglow Solitaire",icon:"solitaire",width:980,height:680,content:game.element,onClose:() => { game.destroy();return true; } });
+    setTimeout(() => game.focus(),0);
+  }
+
+  function openControlPanel() {
+    if (windows.has("controlpanel")) return restoreAndFocus("controlpanel");
+    let panel;
+    const commitSettings = ({ settings,wallpaper }) => {
+      const previous = state.settings;
+      state.settings = normalizeSettings(settings);
+      state.wallpaper = wallpaper || MOTEL_PHOTOS[0].src;
+      applyDesktopSettings({ arrange:state.settings.autoArrange });
+      saveState();
+      renderDesktop({ skipAutoArrange:true });
+      if (state.settings.autoArrange) arrangeDesktopIcons("name",{ silent:true });
+      else if (previous.iconSpacing !== state.settings.iconSpacing) alignDesktopIcons({ silent:true });
+      updateClock();
+      playInterfaceSound("confirm",state.settings.interfaceSound);
+      toast("Control Panel settings applied.");
+    };
+    panel = window.createAfterglowControlPanel({
+      photos:MOTEL_PHOTOS,
+      settings:{ ...state.settings },
+      wallpaper:state.wallpaper || MOTEL_PHOTOS[0].src,
+      defaults:{ settings:{ ...DEFAULT_SETTINGS },wallpaper:MOTEL_PHOTOS[0].src },
+      accents:ACCENTS,
+      onPreview:({ settings,wallpaper }) => applyDesktopSettings({ settings:normalizeSettings(settings),wallpaper,applyLayout:false }),
+      onApply:commitSettings,
+      onCancel:() => { applyDesktopSettings();updateClock(); },
+      onSoundPreview:theme => playInterfaceSound("confirm",theme),
+      onRequestClose:() => closeWindow("controlpanel")
+    });
+    createWindow({
+      id:"controlpanel",title:"Control Panel",icon:"controlpanel",width:920,height:650,content:panel.element,
+      onClose:() => {
+        applyDesktopSettings();updateClock();
+        panel.destroy();
+        return true;
+      }
+    });
+    setTimeout(() => panel.focus(),0);
   }
 
   function openGallery(startIndex = 0) {
@@ -1395,7 +1544,7 @@
   volumeSlider.oninput=()=>{const volume=Number(volumeSlider.value)/100;lofiAudio.volume=volume;lofiAudio.muted=false;volumeValue.textContent=`${volumeSlider.value}%`;volumeButton.textContent=volume===0?"♩":"♫";document.querySelector("#sound-toggle").textContent=volume===0?"♩":"♫";localStorage.setItem("afterglow-volume",String(volume));};
   document.querySelector("#sound-toggle").onclick=()=>{lofiAudio.muted=!lofiAudio.muted;const symbol=lofiAudio.muted?"♩":"♫";document.querySelector("#sound-toggle").textContent=symbol;volumeButton.textContent=symbol;toast(lofiAudio.muted?"Cassette muted.":"Cassette sound restored.");};
   document.addEventListener("click",event=>{if(event.target.closest(".player-controls"))return;volumePopover.classList.add("hidden");volumeButton.setAttribute("aria-expanded","false");});
-  document.addEventListener("pointerdown",event=>{if(!event.target.closest("button,[role=button],.file-item"))return;const pulse=document.createElement("span");pulse.className="click-pulse";pulse.style.left=`${event.clientX}px`;pulse.style.top=`${event.clientY}px`;desktop.append(pulse);setTimeout(()=>pulse.remove(),450);});
+  document.addEventListener("pointerdown",event=>{const interactive=event.target.closest("button,[role=button],.file-item,.desktop-icon,.address-crumb");if(!interactive)return;const pulse=document.createElement("span");pulse.className="click-pulse";pulse.style.left=`${event.clientX}px`;pulse.style.top=`${event.clientY}px`;desktop.append(pulse);setTimeout(()=>pulse.remove(),450);const ownsSound=interactive.closest(".paint-app,.solitaire-app,.minesweeper-app,.fishing-app,.snake-app,.now-playing,.control-panel-app [data-sound],.control-panel-app [data-cp-test-sound]");if(!ownsSound)playInterfaceSound("click");});
 
   const calendarPopover=document.querySelector("#calendar-popover"),clockButton=document.querySelector("#clock-button");
   let calendarCursor=new Date();calendarCursor.setDate(1);
@@ -1415,7 +1564,10 @@
   }
   clockButton.onclick=event=>{event.stopPropagation();const open=calendarPopover.classList.toggle("hidden")===false;clockButton.classList.toggle("active",open);clockButton.setAttribute("aria-expanded",String(open));if(open){calendarCursor=new Date();calendarCursor.setDate(1);renderCalendar();}};
   document.querySelectorAll("[data-calendar-shift]").forEach(button=>button.onclick=event=>{event.stopPropagation();calendarCursor.setMonth(calendarCursor.getMonth()+Number(button.dataset.calendarShift));renderCalendar();});
-  function updateClock(){const now=new Date();document.querySelector("#clock").textContent=`${now.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}\n${now.toLocaleDateString([],{month:"short",day:"numeric"})}`;document.querySelector("#calendar-time").textContent=now.toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"});}
+  function formatClockTime(date, seconds = false, format = state.settings.clockFormat) {
+    return date.toLocaleTimeString([], { hour:format === "24" ? "2-digit" : "numeric",minute:"2-digit",...(seconds ? { second:"2-digit" } : {}),...(format === "24" ? { hourCycle:"h23" } : { hour12:true }) });
+  }
+  function updateClock(){const now=new Date();document.querySelector("#clock").textContent=`${formatClockTime(now)}\n${now.toLocaleDateString([],{month:"short",day:"numeric"})}`;document.querySelector("#calendar-time").textContent=formatClockTime(now,true);}
   updateClock();setInterval(updateClock,1000);
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape"){hideContext();closeStartMenu();calendarPopover.classList.add("hidden");clockButton.classList.remove("active");}
@@ -1428,7 +1580,8 @@
     if(desktopCommand&&e.key==="F5"){e.preventDefault();renderDesktop();toast("Desktop refreshed.");}
     if(desktopCommand&&e.key==="Delete"&&selectedDesktopIds.size){e.preventDefault();moveToTrash([...selectedDesktopIds],()=>{selectedDesktopIds.clear();syncDesktopSelection();});}
   });
-  window.addEventListener("resize",()=>windows.forEach(win=>{const r=win.element.getBoundingClientRect();if(r.left>window.innerWidth-80)win.element.style.left=`${Math.max(0,window.innerWidth-r.width)}px`;if(r.top>window.innerHeight-70)win.element.style.top="6px";}));
+  let desktopResizeFrame = 0;
+  window.addEventListener("resize",()=>{windows.forEach(win=>{const r=win.element.getBoundingClientRect();const maxWidth=Math.max(330,window.innerWidth-16),maxHeight=Math.max(240,window.innerHeight-58);if(r.width>maxWidth)win.element.style.width=`${maxWidth}px`;if(r.height>maxHeight)win.element.style.height=`${maxHeight}px`;const nextWidth=Math.min(r.width,maxWidth),nextHeight=Math.min(r.height,maxHeight);if(r.left+nextWidth>window.innerWidth-4)win.element.style.left=`${Math.max(4,window.innerWidth-nextWidth-4)}px`;if(r.top+nextHeight>window.innerHeight-52)win.element.style.top=`${Math.max(4,window.innerHeight-nextHeight-52)}px`;});if(state.settings.autoArrange){cancelAnimationFrame(desktopResizeFrame);desktopResizeFrame=requestAnimationFrame(()=>arrangeDesktopIcons("name",{silent:true}));}});
 
   renderDesktop();
   setTimeout(()=>toast("Welcome back. Double-click an icon to begin."),500);
