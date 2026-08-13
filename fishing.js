@@ -3,12 +3,12 @@
 
   const STORAGE_KEY = "afterglow-fishing-v1";
   const FISH = [
-    { id:"perch", name:"Rain Perch", rarity:"Common", challenge:.08, color:"#d8b36e", accent:"#7e9e96", belly:"#ead9aa", min:.35, max:1.25, chance:34, fight:.72, points:90, shape:"round", description:"A small golden lake fish that feeds close to the rain-broken surface.", habitat:"Shallow reeds", tip:"Rain Moth" },
-    { id:"bluegill", name:"Bluegill", rarity:"Common", challenge:.2, color:"#7fa9ad", accent:"#e0bb71", belly:"#c7d7cf", min:.45, max:1.6, chance:28, fight:.82, points:115, shape:"round", description:"A lively blue-green fish with a bright amber breast and a stubborn pull.", habitat:"Motel shoreline", tip:"Rain Moth" },
-    { id:"trout", name:"Silver Trout", rarity:"Uncommon", challenge:.42, color:"#c5d3cc", accent:"#df7d82", belly:"#eef0e8", min:1.1, max:3.8, chance:19, fight:1.02, points:180, shape:"sleek", description:"Fast, reflective and easiest to spot when neon crosses the water.", habitat:"Open water", tip:"Silver Minnow" },
-    { id:"char", name:"Lake Char", rarity:"Rare", challenge:.64, color:"#547c77", accent:"#e19a66", belly:"#a9c0b6", min:2.2, max:6.4, chance:11, fight:1.2, points:280, shape:"sleek", description:"A deep-water hunter marked by ember-orange fins and powerful runs.", habitat:"Cold lake shelf", tip:"Silver Minnow" },
-    { id:"pike", name:"Neon Pike", rarity:"Rare", challenge:.82, color:"#83a98d", accent:"#ee7a82", belly:"#c8d8bf", min:3.5, max:9.2, chance:6, fight:1.38, points:420, shape:"long", description:"Long, quick and striped like the motel sign reflected after midnight.", habitat:"Pine-shadow bank", tip:"Neon Spinner" },
-    { id:"koi", name:"Midnight Koi", rarity:"Legendary", challenge:1, color:"#e47a80", accent:"#f0c47e", belly:"#f2d3b0", min:5.5, max:12.5, chance:2, fight:1.58, points:850, shape:"koi", description:"A rumored old koi whose scales glow coral beneath the rain.", habitat:"Unknown depths", tip:"Neon Spinner" }
+    { id:"perch", name:"Rain Perch", rarity:"Common", challenge:.08, agility:.32, jump:.04, dive:.05, color:"#d8b36e", accent:"#7e9e96", belly:"#ead9aa", min:.35, max:1.25, chance:34, fight:.72, points:90, shape:"round", description:"A small golden lake fish that feeds close to the rain-broken surface.", habitat:"Shallow reeds", tip:"Rain Moth" },
+    { id:"bluegill", name:"Bluegill", rarity:"Common", challenge:.2, agility:.42, jump:.08, dive:.08, color:"#7fa9ad", accent:"#e0bb71", belly:"#c7d7cf", min:.45, max:1.6, chance:28, fight:.82, points:115, shape:"round", description:"A lively blue-green fish with a bright amber breast and a stubborn pull.", habitat:"Motel shoreline", tip:"Rain Moth" },
+    { id:"trout", name:"Silver Trout", rarity:"Uncommon", challenge:.42, agility:.68, jump:.3, dive:.1, color:"#c5d3cc", accent:"#df7d82", belly:"#eef0e8", min:1.1, max:3.8, chance:19, fight:1.02, points:180, shape:"sleek", description:"Fast, reflective and easiest to spot when neon crosses the water.", habitat:"Open water", tip:"Silver Minnow" },
+    { id:"char", name:"Lake Char", rarity:"Rare", challenge:.64, agility:.72, jump:.13, dive:.43, color:"#547c77", accent:"#e19a66", belly:"#a9c0b6", min:2.2, max:6.4, chance:11, fight:1.2, points:280, shape:"sleek", description:"A deep-water hunter marked by ember-orange fins and powerful runs.", habitat:"Cold lake shelf", tip:"Silver Minnow" },
+    { id:"pike", name:"Neon Pike", rarity:"Rare", challenge:.82, agility:.91, jump:.28, dive:.21, color:"#83a98d", accent:"#ee7a82", belly:"#c8d8bf", min:3.5, max:9.2, chance:6, fight:1.38, points:420, shape:"long", description:"Long, quick and striped like the motel sign reflected after midnight.", habitat:"Pine-shadow bank", tip:"Neon Spinner" },
+    { id:"koi", name:"Midnight Koi", rarity:"Legendary", challenge:1, agility:1, jump:.4, dive:.36, color:"#e47a80", accent:"#f0c47e", belly:"#f2d3b0", min:5.5, max:12.5, chance:2, fight:1.58, points:850, shape:"koi", description:"A rumored old koi whose scales glow coral beneath the rain.", habitat:"Unknown depths", tip:"Neon Spinner" }
   ];
   const LURES = [
     { id:"moth", name:"Rain Moth", label:"MOTH", bite:.76, rare:0, fight:.96, note:"Quick bites, gentle fights" },
@@ -34,6 +34,10 @@
           <div class="fish-scene-frame">
             <canvas class="fish-canvas" width="960" height="540" aria-label="Rainy motel lake fishing scene"></canvas>
             <div class="fish-weather"><i></i><span>STEADY RAIN</span><b>52&deg;F</b></div>
+            <div class="fish-fight-hud hidden" data-fish-fight-hud>
+              <div><span data-fish-move>TRACKING</span><b data-fish-command>WATCH THE LINE</b></div>
+              <small data-fish-reaction>Hold the mouse to reel · release to give line</small>
+            </div>
             <div class="fish-catch-card hidden" data-fish-catch-card>
               <span class="fish-catch-kicker">CAUGHT AT AFTERGLOW LAKE</span>
               <canvas class="fish-catch-canvas" width="260" height="104" data-fish-catch-canvas></canvas>
@@ -50,8 +54,9 @@
                 <li><b>Hold</b> Space or the action button to charge your cast.</li>
                 <li><b>Release</b> to send the bobber across the lake.</li>
                 <li>When it dips, <b>press quickly</b> to set the hook.</li>
-                <li><b>Hold and release</b> while reeling. Keep tension inside the green band.</li>
-                <li>Better fish have a <b>narrower safe band</b>, longer fights and violent surges. Red snaps the line; zero tension loses the fish.</li>
+                <li><b>Hold raises tension. Release lowers it.</b> Keep the line inside the green band.</li>
+                <li>When a fish <b>runs or jumps, release</b> to give it line. During a dive, hold firmly and reel.</li>
+                <li>Each fish has its own green tension zone. Reel near its center for maximum progress. Red snaps the line; zero tension loses the fish.</li>
               </ol>
               <p>Long casts and specialized lures improve rare catches. Open Collection to inspect every recorded fish.</p>
             </div>
@@ -98,7 +103,7 @@
             <div data-fish-journal></div>
           </div>
           <button type="button" class="fish-sound" data-fish-sound aria-pressed="true">Sound: on</button>
-          <div class="fish-tip"><b>SPACE / HOLD</b> cast or reel<br><b>SPACE / TAP</b> set the hook<br><b>C</b> collection &nbsp; <b>N</b> new session</div>
+          <div class="fish-tip"><b>MOUSE / SPACE</b> hold to reel, release for line<br><b>RELEASE</b> on runs & jumps &nbsp; <b>HOLD</b> through dives<br><b>C</b> collection &nbsp; <b>N</b> new session</div>
         </aside>
       </div>`;
 
@@ -125,6 +130,10 @@
     const gallery = root.querySelector("[data-fish-gallery]");
     const galleryCanvas = root.querySelector("[data-gallery-canvas]");
     const catchCanvas = root.querySelector("[data-fish-catch-canvas]");
+    const fightHud = root.querySelector("[data-fish-fight-hud]");
+    const moveElement = root.querySelector("[data-fish-move]");
+    const commandElement = root.querySelector("[data-fish-command]");
+    const reactionElement = root.querySelector("[data-fish-reaction]");
 
     let saveData = loadSave();
     let score = 0;
@@ -145,9 +154,22 @@
     let hookedFish = null;
     let tension = 42;
     let reelProgress = 0;
-    let slackTime = 0;
     let fishClock = 0;
-    let wasSurging = false;
+    let fightMode = "cruise";
+    let fightModeRemaining = 0;
+    let nextMoveIn = 1;
+    let fishDirection = 0;
+    let fishPosition = 0;
+    let fishVelocity = 0;
+    let tensionRate = 0;
+    let activeSafeMin = 24;
+    let activeSafeMax = 78;
+    let reactionQuality = "neutral";
+    let maneuverStreak = 0;
+    let maneuversWon = 0;
+    let moveSkill = 0;
+    let queuedMove = "run";
+    let splashPulse = 0;
     let lastTime = performance.now();
     let animationFrame = 0;
     let destroyed = false;
@@ -169,6 +191,8 @@
       direction: index % 2 ? 1 : -1,
       depth: .08 + Math.random() * .13
     }));
+    const fireflies = Array.from({ length: 18 }, (_, index) => ({ x:540 + Math.random()*400,y:215+Math.random()*95,phase:index*.73,size:.6+Math.random()*1.2 }));
+    const splashes = [];
 
     function loadSave() {
       try {
@@ -318,8 +342,8 @@
       let meterTitle = "CAST POWER";
       let description = `${Math.round(castPower)}%`;
       actionButton.disabled = false;
-      const safeMin = hookedFish?.safeMin ?? 24;
-      const safeMax = hookedFish?.safeMax ?? 78;
+      const safeMin = phase === "hooked" ? activeSafeMin : hookedFish?.safeMin ?? 24;
+      const safeMax = phase === "hooked" ? activeSafeMax : hookedFish?.safeMax ?? 78;
       if (hookedFish) {
         root.dataset.hookedFish = hookedFish.id;
         root.dataset.fightChallenge = hookedFish.challenge.toFixed(2);
@@ -332,6 +356,9 @@
       root.classList.toggle("fish-biting", phase === "bite");
       root.classList.toggle("fish-hooked", phase === "hooked");
       root.classList.toggle("fish-charging", phase === "charging");
+      root.classList.toggle("fish-jumping", phase === "hooked" && (fightMode === "jump-warning" || fightMode === "jump"));
+      root.classList.toggle("fish-diving", phase === "hooked" && fightMode === "dive");
+      fightHud.classList.toggle("hidden", phase !== "hooked");
       if (phase === "charging") label = "RELEASE TO CAST";
       if (phase === "casting") { label = "CASTING..."; actionButton.disabled = true; }
       if (phase === "waiting") { label = "WAIT FOR A BITE"; actionButton.disabled = true; meter = 0; description = "—"; }
@@ -341,14 +368,21 @@
       actionButton.querySelector("span").textContent = label;
       meterLabel.textContent = meterTitle;
       meterValue.textContent = description;
-      meterFill.style.width = `${Math.max(0, Math.min(100, meter))}%`;
+      meterFill.style.transform = `scaleX(${Math.max(0, Math.min(100, meter)) / 100})`;
       meterFill.classList.toggle("danger", phase === "hooked" && tension > safeMax);
       meterFill.classList.toggle("slack", phase === "hooked" && tension < safeMin);
+      actionButton.classList.toggle("is-held", inputHeld);
       meterElement.classList.toggle("show-safe-zone", phase === "hooked");
       meterElement.style.setProperty("--safe-start", `${safeMin}%`);
       meterElement.style.setProperty("--safe-width", `${Math.max(0, safeMax - safeMin)}%`);
       meterElement.style.setProperty("--safe-end", `${safeMax}%`);
-      progressFill.style.width = `${phase === "hooked" && hookedFish ? Math.min(100, reelProgress / hookedFish.target * 100) : 0}%`;
+      progressFill.style.transform = `scaleX(${phase === "hooked" && hookedFish ? Math.min(1, reelProgress / hookedFish.target) : 0})`;
+      if (phase === "hooked") {
+        root.dataset.fightMode = fightMode;
+        root.dataset.fishDirection = String(fishDirection);
+        root.dataset.reactionQuality = reactionQuality;
+        root.dataset.maneuversWon = String(maneuversWon);
+      }
     }
 
     function chooseFish() {
@@ -368,12 +402,12 @@
         weight,
         fight:selected.fight * lure.fight,
         challenge,
-        safeMin:22 + challenge * 13,
-        safeMax:80 - challenge * 14,
-        tensionRise:27 + challenge * 12,
-        slackFall:21 + challenge * 17,
-        reelRate:27 - challenge * 7,
-        target:78 + challenge * 112 + sizeChallenge * (8 + challenge * 14)
+        safeMin:20 + challenge * 12,
+        safeMax:82 - challenge * 13,
+        reelRate:26 - challenge * 2,
+        target:70 + challenge * 13 + sizeChallenge * 6,
+        moveInterval:1.75 - challenge * .75,
+        moveSpeed:.54 + selected.agility * .74
       };
     }
 
@@ -403,10 +437,21 @@
       phase = "hooked";
       tension = (hookedFish.safeMin + hookedFish.safeMax) / 2;
       reelProgress = 7;
-      slackTime = 0;
       fishClock = 0;
-      wasSurging = false;
-      setMessage(`${hookedFish.rarity.toUpperCase()} FISH ON`, `${hookedFish.name} hooked. Keep the line inside the green band!`);
+      fightMode = "cruise";
+      fightModeRemaining = .72;
+      nextMoveIn = .55 + Math.random() * .35;
+      fishDirection = Math.random() < .5 ? -1 : 1;
+      fishPosition = 0;
+      fishVelocity = 0;
+      tensionRate = 0;
+      activeSafeMin = hookedFish.safeMin;
+      activeSafeMax = hookedFish.safeMax;
+      reactionQuality = "neutral";
+      maneuverStreak = 0;
+      maneuversWon = 0;
+      splashes.length = 0;
+      setMessage(`${hookedFish.rarity.toUpperCase()} FISH ON`, `${hookedFish.name} hooked. Hold to reel; release when pressure surges.`);
       tone(330, .05, .025, "square");
       tone(440, .07, .02, "square", .05);
     }
@@ -415,7 +460,7 @@
       phase = "escaped";
       inputHeld = false;
       root.classList.remove("fish-surge");
-      wasSurging = false;
+      fightHud.classList.add("hidden");
       streak = 0;
       refreshStats();
       setMessage("THE LINE WENT QUIET", message);
@@ -428,7 +473,7 @@
       phase = "caught";
       inputHeld = false;
       root.classList.remove("fish-surge");
-      wasSurging = false;
+      fightHud.classList.add("hidden");
       catchCount += 1;
       streak += 1;
       const streakMultiplier = 1 + Math.min(4, streak - 1) * .25;
@@ -470,7 +515,10 @@
       phase = "ready";
       hookedFish = null;
       root.classList.remove("fish-surge");
-      wasSurging = false;
+      root.classList.remove("fish-jumping","fish-diving");
+      fightHud.classList.add("hidden");
+      fightMode = "cruise";
+      tensionRate = 0;
       setMessage("ON THE SHORE", "Hold to charge your cast.");
       refreshStats();
       updateControls();
@@ -481,6 +529,10 @@
       if (event) event.preventDefault();
       if (!gallery.classList.contains("hidden") || !helpCard.classList.contains("hidden")) return;
       if (inputHeld) return;
+      if (event?.pointerId !== undefined && event.currentTarget?.setPointerCapture) {
+        try { event.currentTarget.setPointerCapture(event.pointerId); } catch (error) { /* Pointer capture is optional. */ }
+      }
+      if (phase === "hooked") tensionRate = Math.max(7, tensionRate);
       inputHeld = true;
       root.focus({ preventScroll: true });
       if (phase === "ready") startCharging();
@@ -499,8 +551,151 @@
       if (event) event.preventDefault();
       if (!inputHeld) return;
       inputHeld = false;
+      if (phase === "hooked") tensionRate = Math.min(-7, tensionRate);
       if (phase === "charging") releaseCast();
       updateControls();
+    }
+
+    function addSplash(x, y, strength = 1) {
+      for (let index = 0; index < Math.ceil(5 * strength); index += 1) {
+        splashes.push({ x:x + (Math.random() - .5) * 12, y, vx:(Math.random() - .5) * 62 * strength, vy:-35 - Math.random() * 70 * strength, life:.45 + Math.random() * .28, maxLife:.73 });
+      }
+      if (splashes.length > 70) splashes.splice(0, splashes.length - 70);
+    }
+
+    function clampValue(value, minimum, maximum) {
+      return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    function describeFight() {
+      let move = "STEADY PULL";
+      let command = inputHeld ? "REELING · FEATHER THE LINE" : "HOLD MOUSE TO REEL";
+      let reaction = tension >= activeSafeMin && tension <= activeSafeMax ? "Line settled inside the green zone" : tension > activeSafeMax ? "Release briefly to lower tension" : "Reel now before the line goes slack";
+      if (fightMode === "run-warning" || fightMode === "run") {
+        move = fightMode === "run" ? "HARD RUN" : "PRESSURE BUILDING";
+        command = "RELEASE · GIVE LINE";
+        reaction = fightMode === "run" ? (inputHeld ? "Let go—the pressure is climbing" : "Good release · let the run burn out") : "Be ready to release";
+      } else if (fightMode === "jump-warning" || fightMode === "jump") {
+        move = fightMode === "jump" ? "FISH AIRBORNE" : "SURFACE FLASH";
+        command = "RELEASE THE REEL";
+        reaction = inputHeld ? "Let go before the line snaps" : "Good · give it line";
+      } else if (fightMode === "dive-warning" || fightMode === "dive") {
+        move = fightMode === "dive" ? "DEEP DIVE" : "LINE SINKING";
+        command = "HOLD MOUSE · REEL";
+        reaction = inputHeld ? "Good pressure · keep reeling" : "Reel now or the line will go slack";
+      }
+      moveElement.textContent = move;
+      commandElement.textContent = command;
+      reactionElement.textContent = reaction;
+    }
+
+    function queueFishMove() {
+      const roll = Math.random();
+      queuedMove = roll < hookedFish.jump ? "jump" : roll < hookedFish.jump + hookedFish.dive ? "dive" : "run";
+      fishDirection = Math.random() < .5 ? -1 : 1;
+      fightMode = queuedMove + "-warning";
+      fightModeRemaining = Math.max(.32, .56 - hookedFish.challenge * .15);
+      reactionQuality = "neutral";
+      moveSkill = 0;
+      if (queuedMove === "jump") { setMessage("SURFACE FLASH", "Release—the fish is coming out of the water!");tone(570,.05,.02,"square"); }
+      else if (queuedMove === "dive") { setMessage("THE LINE SINKS", "Hold the reel when the fish dives.");tone(185,.09,.018,"sawtooth"); }
+      else { setMessage("PRESSURE BUILDING", "Release when the fish begins its run.");tone(255,.045,.015,"square"); }
+    }
+
+    function activateFishMove() {
+      fightMode = queuedMove;
+      fightModeRemaining = queuedMove === "jump" ? .55 + hookedFish.challenge * .1 : queuedMove === "dive" ? .74 + hookedFish.challenge * .18 : .8 + hookedFish.challenge * .2 + Math.random() * .15;
+      moveSkill = 0;
+      splashPulse = 0;
+      fishVelocity += fishDirection * (.45 + hookedFish.moveSpeed * .42);
+      if (queuedMove === "jump") { addSplash(480 + fishPosition * 180, 362, 1.35);tone(390,.05,.02,"triangle"); }
+      describeFight();
+    }
+
+    function finishFishMove() {
+      const successful = moveSkill > .12;
+      if (successful) {
+        maneuverStreak = Math.min(5, maneuverStreak + 1);
+        maneuversWon += 1;
+        const burst = (4 + hookedFish.challenge * 4.5) * (1 + maneuverStreak * .08);
+        reelProgress += burst;
+        const progressNote = "reaction streak x" + maneuverStreak;
+        setMessage("FISH TURNED", "Clean timing · " + progressNote + " · gained " + Math.round(burst) + " m.");
+        tone(350 + maneuverStreak * 34,.05,.018,"sine");
+      } else {
+        maneuverStreak = 0;
+        reelProgress = Math.max(0, reelProgress - (2 + hookedFish.challenge * 3));
+        setMessage("FISH ON", "Recover the tension and watch the next cue.");
+      }
+      fightMode = "cruise";
+      fightModeRemaining = 0;
+      nextMoveIn = hookedFish.moveInterval * (.76 + Math.random() * .44);
+      reactionQuality = "neutral";
+    }
+
+    function updateFight(delta) {
+      fishClock += delta;
+      fightModeRemaining -= delta;
+
+      const zoneCenter = (activeSafeMin + activeSafeMax) / 2;
+      const activeHalfWidth = (activeSafeMax - activeSafeMin) / 2;
+
+      let targetRate = 0;
+      const precision = clampValue(1 - Math.abs(tension - zoneCenter) / Math.max(10, activeHalfWidth * 1.15), 0, 1);
+      const insideSafeZone = tension >= activeSafeMin && tension <= activeSafeMax;
+
+      if (fightMode === "cruise") {
+        nextMoveIn -= delta;
+        reactionQuality = "neutral";
+        targetRate = inputHeld ? 22 + hookedFish.challenge * 11 : -18 - hookedFish.challenge * 8;
+        if (inputHeld && insideSafeZone) reelProgress += delta * hookedFish.reelRate * (.48 + precision * .58);
+        else if (tension < activeSafeMin) reelProgress -= delta * (1 + hookedFish.challenge * 1.6);
+        if (nextMoveIn <= 0) queueFishMove();
+      } else if (fightMode.endsWith("-warning")) {
+        targetRate = inputHeld ? 18 + hookedFish.challenge * 6 : -15 - hookedFish.challenge * 5;
+        reactionQuality = "neutral";
+        if (fightModeRemaining <= 0) activateFishMove();
+      } else if (fightMode === "run") {
+        const correct = !inputHeld;
+        reactionQuality = correct ? "perfect" : "wrong";
+        moveSkill += delta * (correct ? 1.2 : -1.55);
+        targetRate = inputHeld ? 76 + hookedFish.challenge * 36 : -10 - hookedFish.challenge * 3;
+        fishVelocity += fishDirection * hookedFish.moveSpeed * delta * 1.9;
+        if (Math.random() < delta * (4 + hookedFish.challenge * 8)) addSplash(480 + fishPosition * 180, 366, .45 + hookedFish.challenge * .35);
+        if (fightModeRemaining <= 0) finishFishMove();
+      } else if (fightMode === "jump") {
+        const correct = !inputHeld;
+        reactionQuality = correct ? "perfect" : "wrong";
+        moveSkill += delta * (correct ? 1.22 : -1.65);
+        targetRate = inputHeld ? 92 + hookedFish.challenge * 32 : -9 - hookedFish.challenge * 2;
+        if (inputHeld) reelProgress -= delta * 5;
+        splashPulse += delta;
+        if (splashPulse > .09) { splashPulse = 0;addSplash(480 + fishPosition * 180, 365, .72); }
+        if (fightModeRemaining <= 0) finishFishMove();
+      } else if (fightMode === "dive") {
+        const correct = inputHeld;
+        reactionQuality = correct ? "perfect" : "wrong";
+        moveSkill += delta * (correct ? 1.13 : -1.42);
+        targetRate = inputHeld ? 10 + hookedFish.challenge * 4 : -55 - hookedFish.challenge * 22;
+        if (inputHeld) reelProgress += delta * hookedFish.reelRate * (.7 + precision * .55);
+        else reelProgress -= delta * (3.5 + hookedFish.challenge * 2);
+        fishVelocity += fishDirection * hookedFish.moveSpeed * delta * .62;
+        if (fightModeRemaining <= 0) finishFishMove();
+      }
+
+      tensionRate += (targetRate - tensionRate) * (1 - Math.exp(-delta * 12));
+      tensionRate = inputHeld ? Math.max(3, tensionRate) : Math.min(-3, tensionRate);
+      tension += tensionRate * delta;
+      fishVelocity *= Math.pow(.055, delta);
+      fishPosition += fishVelocity * delta;
+      if (Math.abs(fishPosition) > 1) { fishPosition = Math.sign(fishPosition);fishVelocity *= -.32;fishDirection *= -1; }
+      tension = Math.max(0, tension);
+      reelProgress = Math.max(0, reelProgress);
+      describeFight();
+      root.classList.toggle("fish-surge", fightMode === "run" || fightMode === "jump");
+      if (tension >= 100) loseFish("The line snapped—release sooner when pressure surges.");
+      else if (tension <= 0) loseFish("The line reached zero tension and the fish shook free.");
+      else if (reelProgress >= hookedFish.target) landFish();
     }
 
     function updateGame(delta) {
@@ -514,6 +709,8 @@
         if (fish.x < -40) fish.x = 1000;
         if (fish.x > 1000) fish.x = -40;
       });
+      splashes.forEach(particle => { particle.x += particle.vx * delta;particle.y += particle.vy * delta;particle.vy += 185 * delta;particle.life -= delta; });
+      for (let index = splashes.length - 1; index >= 0; index -= 1) if (splashes[index].life <= 0) splashes.splice(index,1);
       if (!gallery.classList.contains("hidden") || !helpCard.classList.contains("hidden")) { updateControls(); return; }
       if (phase === "charging") {
         castPower += chargeDirection * delta * 66;
@@ -542,36 +739,7 @@
         biteRemaining -= delta;
         if (biteRemaining <= 0) loseFish("The fish took the bait and slipped away.");
       } else if (phase === "hooked") {
-        fishClock += delta;
-        const primary = (Math.sin(fishClock * (2.15 + hookedFish.fight * .9)) + 1) / 2;
-        const chop = (Math.sin(fishClock * (5.4 + hookedFish.challenge * 3.2) + 1.3) + 1) / 2;
-        const surge = Math.pow(primary * .7 + chop * .3, 2.15 - hookedFish.challenge * .75);
-        const surging = surge > .72 - hookedFish.challenge * .2;
-        root.classList.toggle("fish-surge", surging);
-        if (surging && !wasSurging) {
-          setMessage(`${hookedFish.rarity.toUpperCase()} SURGE`, `${hookedFish.name} is running—ease off the reel!`);
-          tone(118 + hookedFish.challenge * 45, .07, .018, "sawtooth");
-        } else if (!surging && wasSurging) {
-          setMessage("FISH ON", "Recover tension and reel inside the green band.");
-        }
-        wasSurging = surging;
-        if (inputHeld) {
-          tension += delta * (hookedFish.tensionRise + surge * (14 + hookedFish.challenge * 55));
-          const sweetSpot = tension >= hookedFish.safeMin && tension <= hookedFish.safeMax;
-          reelProgress += delta * hookedFish.reelRate * (sweetSpot ? 1 : .12);
-          if (tension > hookedFish.safeMax) reelProgress -= delta * (2 + hookedFish.challenge * 6);
-          slackTime = Math.max(0, slackTime - delta * 2);
-        } else {
-          tension -= delta * (hookedFish.slackFall + (surging ? hookedFish.challenge * 5 : 0));
-          reelProgress -= delta * (2.2 + hookedFish.challenge * 5.2);
-          if (tension < hookedFish.safeMin) slackTime += delta;
-          else slackTime = Math.max(0, slackTime - delta);
-        }
-        tension = Math.max(0, tension);
-        reelProgress = Math.max(0, reelProgress);
-        if (tension >= 100) loseFish("The line snapped under too much tension.");
-        else if (tension <= 0) loseFish("The line reached zero tension and the fish shook free.");
-        else if (reelProgress >= hookedFish.target) landFish();
+        updateFight(delta);
       } else {
         root.classList.remove("fish-surge");
       }
@@ -621,19 +789,18 @@
 
     function drawMotel(time) {
       context.save();
-      context.fillStyle = "#172526";
-      context.fillRect(610, 232, 242, 61);
-      context.fillStyle = "#263637";
-      context.fillRect(602, 225, 258, 10);
-      context.fillStyle = "#0f2022";context.fillRect(610, 285, 242, 8);
+      const motelGlow = context.createLinearGradient(610,230,610,294);motelGlow.addColorStop(0,"#263537");motelGlow.addColorStop(1,"#111f21");context.fillStyle=motelGlow;context.fillRect(610,232,242,61);
+      context.fillStyle="#354445";context.fillRect(600,224,262,10);context.fillStyle="#8b6047";context.fillRect(600,234,262,3);
+      context.fillStyle="#0d1d1f";context.fillRect(610,284,242,10);
+      context.strokeStyle="rgba(167,188,177,.24)";context.lineWidth=2;context.beginPath();context.moveTo(608,277);context.lineTo(855,277);context.stroke();
       for (let x = 624; x < 848; x += 38) {
-        context.fillStyle = "#e7aa69";
+        const windowGlow=context.createRadialGradient(x+9,258,1,x+9,258,18);windowGlow.addColorStop(0,"#f6d392");windowGlow.addColorStop(1,"#b56848");context.fillStyle=windowGlow;
         context.globalAlpha = .68 + Math.sin(time * .001 + x) * .05;
         context.fillRect(x, 248, 18, 21);
-        context.fillStyle = "#44352b";
-        context.fillRect(x + 2, 250, 6, 17);
-        context.strokeStyle = "rgba(245,211,159,.28)";context.lineWidth = 1;context.strokeRect(x,248,18,21);
+        context.fillStyle = "#45352e";context.fillRect(x + 8, 249, 2, 19);context.fillRect(x+1,257,16,2);
+        context.strokeStyle = "rgba(255,225,169,.48)";context.lineWidth = 1;context.strokeRect(x,248,18,21);
         context.fillStyle = "#111e20";context.fillRect(x + 25,246,8,37);
+        context.fillStyle="#e4b36e";context.beginPath();context.arc(x+30,265,1.2,0,Math.PI*2);context.fill();
       }
       context.globalAlpha = 1;
       context.fillStyle = "#111f21";
@@ -654,6 +821,10 @@
         context.beginPath();context.arc(772 + Math.cos(angle) * 66,178 + Math.sin(angle) * 23,1.5,0,Math.PI*2);context.fill();
       }
       context.shadowBlur = 0;
+      context.fillStyle="#111f21";context.fillRect(578,286,310,5);
+      context.strokeStyle="rgba(118,145,136,.32)";context.lineWidth=2;for(let x=590;x<900;x+=24){context.beginPath();context.moveTo(x,290);context.lineTo(x-4,307);context.stroke();}
+      fireflies.forEach(firefly=>{const glow=.35+Math.sin(time*.002+firefly.phase)*.3;context.globalAlpha=glow;context.shadowColor="#efc572";context.shadowBlur=7;context.fillStyle="#f2c675";context.beginPath();context.arc(firefly.x,firefly.y,firefly.size,0,Math.PI*2);context.fill();});
+      context.globalAlpha=1;context.shadowBlur=0;
       context.restore();
     }
 
@@ -675,11 +846,15 @@
       const reflection = context.createLinearGradient(697, 278, 847, 510);
       reflection.addColorStop(0, "rgba(232,110,116,.31)"); reflection.addColorStop(1, "rgba(232,110,116,0)");
       context.fillStyle = reflection; context.beginPath(); context.moveTo(705, 278); context.lineTo(840, 278); context.lineTo(803, 520); context.lineTo(742, 520); context.closePath(); context.fill();
+      context.save();context.globalCompositeOperation="screen";
+      for(let row=0;row<18;row+=1){const y=288+row*12;const shimmer=18+row*2.4;const center=772+Math.sin(time*.0017+row)*14;context.strokeStyle=`rgba(${row%3?239:244},${row%3?116:191},${row%3?122:116},${.17-row*.004})`;context.lineWidth=1.5;context.beginPath();context.moveTo(center-shimmer,y);context.lineTo(center+shimmer,y);context.stroke();}
+      context.restore();
       context.strokeStyle = "rgba(193,222,218,.21)";
       rain.forEach((drop, index) => {
         if (drop.y < 278 || index % 4) return;
         context.beginPath(); context.ellipse(drop.x, drop.y, 5 + index % 8, 1.8 + index % 3, 0, 0, Math.PI * 2); context.stroke();
       });
+      splashes.forEach(particle=>{context.globalAlpha=Math.max(0,particle.life/particle.maxLife);context.fillStyle="#d9ece7";context.beginPath();context.arc(particle.x,particle.y,1.3,0,Math.PI*2);context.fill();});context.globalAlpha=1;
     }
 
     function drawForeground(time) {
@@ -691,6 +866,10 @@
       }
       context.fillStyle="rgba(91,115,106,.28)";
       for(let index=0;index<9;index+=1){context.beginPath();context.ellipse(36+index*117,526+(index%3)*6,13+index%4*4,5+index%2*2,-.15,0,Math.PI*2);context.fill();}
+      context.fillStyle="#172c2d";context.beginPath();context.moveTo(738,506);context.lineTo(960,468);context.lineTo(960,540);context.lineTo(724,540);context.closePath();context.fill();
+      context.strokeStyle="#3d5550";context.lineWidth=2;for(let index=0;index<9;index+=1){context.beginPath();context.moveTo(748+index*28,503-index*4.6);context.lineTo(762+index*28,540);context.stroke();}
+      context.strokeStyle="rgba(143,164,153,.25)";context.lineWidth=1;context.beginPath();context.moveTo(742,508);context.lineTo(960,472);context.stroke();
+      context.save();context.fillStyle="#091c20";context.beginPath();context.arc(887,434,12,0,Math.PI*2);context.fill();context.beginPath();context.moveTo(874,447);context.quadraticCurveTo(887,439,901,449);context.lineTo(908,501);context.lineTo(863,507);context.closePath();context.fill();context.strokeStyle="#122e31";context.lineWidth=8;context.lineCap="round";context.beginPath();context.moveTo(878,456);context.lineTo(850,474);context.stroke();context.fillStyle="#efbf77";context.globalAlpha=.4;context.beginPath();context.arc(885,432,4,0,Math.PI*2);context.fill();context.restore();
     }
 
     function bobberPosition() {
@@ -701,8 +880,27 @@
         return { x: startX + (bobberX - startX) * t, y: startY + (bobberY - startY) * t - Math.sin(t * Math.PI) * height };
       }
       const dip = phase === "bite" ? 10 + Math.sin(biteRemaining * 30) * 4 : 0;
-      const struggle = phase === "hooked" ? Math.sin(fishClock * 8) * (7 + hookedFish.fight * 4) : 0;
+      const struggle = phase === "hooked" ? fishPosition * 58 + Math.sin(fishClock * 8) * (4 + hookedFish.fight * 2) : 0;
       return { x: bobberX + struggle, y: bobberY + dip + Math.abs(struggle) * .2 };
+    }
+
+    function drawLiveFish(x,y,time) {
+      if (!hookedFish) return;
+      const jumpProgress=fightMode==="jump"?Math.max(0,Math.min(1,1-fightModeRemaining/.64)):0;
+      const lift=fightMode==="jump"?Math.sin(jumpProgress*Math.PI)*105:0;
+      const depth=fightMode==="dive"?78:42;
+      const drawY=y+depth-lift;
+      const direction=fishDirection || (fishVelocity<0?-1:1);
+      const size=26+hookedFish.fight*7;
+      context.save();context.translate(x,drawY);context.scale(direction||1,1);context.rotate(Math.sin(fishClock*4.4)*.12+(fightMode==="jump"?-Math.cos(jumpProgress*Math.PI)*.35:0));context.globalAlpha=fightMode==="jump"?.98:.58;
+      const body=context.createLinearGradient(0,-size*.35,0,size*.35);body.addColorStop(0,hookedFish.accent);body.addColorStop(.48,hookedFish.color);body.addColorStop(1,hookedFish.belly);context.fillStyle=body;context.strokeStyle="rgba(15,42,40,.8)";context.lineWidth=1.5;
+      context.beginPath();context.ellipse(0,0,size*1.5,size*.43,0,0,Math.PI*2);context.fill();context.stroke();
+      context.fillStyle=hookedFish.color;context.beginPath();context.moveTo(-size*1.3,0);context.lineTo(-size*2,-size*.7);context.lineTo(-size*1.82,0);context.lineTo(-size*2,size*.7);context.closePath();context.fill();context.stroke();
+      context.fillStyle=hookedFish.accent;context.beginPath();context.moveTo(-size*.3,-size*.32);context.lineTo(size*.2,-size*.9);context.lineTo(size*.48,-size*.3);context.closePath();context.fill();context.beginPath();context.moveTo(-size*.05,size*.28);context.lineTo(size*.45,size*.7);context.lineTo(size*.62,size*.22);context.closePath();context.fill();
+      context.strokeStyle="rgba(245,238,216,.32)";for(let stripe=-.55;stripe<.75;stripe+=.36){context.beginPath();context.moveTo(size*stripe,-size*.32);context.lineTo(size*(stripe+.12),size*.3);context.stroke();}
+      context.fillStyle="#f4ead5";context.beginPath();context.arc(size*1.12,-size*.11,3.7,0,Math.PI*2);context.fill();context.fillStyle="#132b2b";context.beginPath();context.arc(size*1.3,-size*.11,1.8,0,Math.PI*2);context.fill();
+      context.restore();
+      if(fightMode==="jump"){context.strokeStyle="rgba(210,232,225,.48)";context.lineWidth=1.2;context.beginPath();context.ellipse(x,y+49,28+Math.sin(time*.01)*5,6,0,0,Math.PI*2);context.stroke();}
     }
 
     function drawFishing(time) {
@@ -712,9 +910,11 @@
       }
       if (["ready", "caught", "escaped"].includes(phase)) return;
       const bobber = bobberPosition();
+      const rodTipX=812;
+      const rodTipY=332+(phase==="hooked"?Math.max(0,tension-45)*.16:0);
       context.strokeStyle = phase === "hooked" && tension > 78 ? "rgba(247,133,137,.92)" : "rgba(224,224,204,.72)";
-      context.lineWidth = 1.35;
-      context.beginPath(); context.moveTo(827, 369); context.quadraticCurveTo(700, 240, bobber.x, bobber.y - 4); context.stroke();
+      context.shadowColor=phase==="hooked"&&tension>78?"rgba(247,105,115,.7)":"transparent";context.shadowBlur=5;context.lineWidth = 1.35;
+      context.beginPath(); context.moveTo(rodTipX, rodTipY); context.quadraticCurveTo((rodTipX+bobber.x)*.5, 255+(tension*.18), bobber.x, bobber.y - 4); context.stroke();context.shadowBlur=0;
       context.fillStyle = "#f0e1bd"; context.fillRect(bobber.x - 2, bobber.y - 9, 4, 10);
       context.fillStyle = "#df7379"; context.beginPath(); context.arc(bobber.x, bobber.y + 1, 6, 0, Math.PI * 2); context.fill();
       context.strokeStyle = "rgba(220,235,228,.34)";
@@ -726,13 +926,11 @@
         for(let drop=0;drop<6;drop+=1){const angle=time*.006+drop*1.047;context.fillStyle="rgba(211,231,224,.52)";context.beginPath();context.arc(bobber.x+Math.cos(angle)*18*force,bobber.y-Math.abs(Math.sin(angle))*18*force,1.5,0,Math.PI*2);context.fill();}
       }
       if (phase === "hooked") {
-        context.save(); context.translate(bobber.x + Math.sin(fishClock * 3) * 34, bobber.y + 52); context.rotate(Math.sin(fishClock * 2.4) * .22);
-        context.globalAlpha = .34; context.fillStyle = hookedFish.color;
-        context.beginPath(); context.ellipse(0, 0, 27 + hookedFish.fight * 8, 8 + hookedFish.fight * 2, 0, 0, Math.PI * 2); context.fill();
-        context.beginPath(); context.moveTo(-24, 0); context.lineTo(-41, -12); context.lineTo(-41, 12); context.closePath(); context.fill(); context.restore();
+        drawLiveFish(bobber.x+fishPosition*118,bobber.y,time);
       }
-      context.strokeStyle = "#9b7250"; context.lineWidth = 6; context.lineCap = "round"; context.beginPath(); context.moveTo(852, 508); context.lineTo(828, 368); context.stroke();
-      context.strokeStyle = "#dbc38f"; context.lineWidth = 2; context.beginPath(); context.moveTo(828, 368); context.lineTo(812, 332); context.stroke();
+      const rodGradient=context.createLinearGradient(852,508,rodTipX,rodTipY);rodGradient.addColorStop(0,"#6e472f");rodGradient.addColorStop(.72,"#bc8c5b");rodGradient.addColorStop(1,"#e0c58f");context.strokeStyle=rodGradient;context.lineWidth=6;context.lineCap="round";context.beginPath();context.moveTo(852,508);context.quadraticCurveTo(840,407,rodTipX,rodTipY);context.stroke();
+      context.strokeStyle="#e7d3a4";context.lineWidth=1.4;context.beginPath();context.moveTo(842,454);context.quadraticCurveTo(831,382,rodTipX,rodTipY);context.stroke();
+      context.fillStyle="#c89153";context.beginPath();context.arc(846,463,8,0,Math.PI*2);context.fill();context.strokeStyle="#402f25";context.lineWidth=2;context.stroke();context.beginPath();context.arc(846,463,3,0,Math.PI*2);context.stroke();
     }
 
     function drawRain() {
@@ -785,6 +983,8 @@
     actionButton.addEventListener("pointerdown", actionDown);
     canvas.addEventListener("pointerdown", actionDown);
     document.addEventListener("pointerup", actionUp);
+    document.addEventListener("pointercancel", actionUp);
+    window.addEventListener("blur", actionUp);
     root.addEventListener("keydown", onKeyDown);
     root.addEventListener("keyup", onKeyUp);
     root.querySelector("[data-fish-new]").onclick = newSession;
@@ -825,6 +1025,8 @@
         cancelAnimationFrame(animationFrame);
         clearTimeout(catchCardTimer);
         document.removeEventListener("pointerup", actionUp);
+        document.removeEventListener("pointercancel", actionUp);
+        window.removeEventListener("blur", actionUp);
         root.removeEventListener("keydown", onKeyDown);
         root.removeEventListener("keyup", onKeyUp);
         if (audioContext && audioContext.state !== "closed") audioContext.close();

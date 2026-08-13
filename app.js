@@ -144,16 +144,14 @@
     if (!canMoveItemsTo(ids, targetParentId)) return false;
     const moving = movableItems(ids).filter(item => item.parentId !== targetParentId);
     const desktopDrop = targetParentId === "desktop" && options.dropPoint;
-    const desktopRect = desktopDrop ? desktop.getBoundingClientRect() : null;
+    const dropPosition = desktopDrop ? desktopPositionFromPointer(options.dropPoint) : null;
     moving.forEach((item, index) => {
       item.name = movedItemName(item, targetParentId);
       item.parentId = targetParentId;
       if (desktopDrop) {
-        const columnOffset = index % 3;
-        const rowOffset = Math.floor(index / 3);
         state.iconPositions[item.id] = {
-          x:options.dropPoint.clientX - desktopRect.left - 34 + columnOffset * DESKTOP_GRID.columnWidth,
-          y:options.dropPoint.clientY - desktopRect.top - 38 + rowOffset * DESKTOP_GRID.rowHeight
+          x:dropPosition.x + (index % 3) * 4,
+          y:dropPosition.y + Math.floor(index / 3) * 4
         };
       } else delete state.iconPositions[item.id];
     });
@@ -164,14 +162,7 @@
     saveState();
     refreshFileViews();
     if (desktopDrop) {
-      const droppedIcons = moving.map(item => {
-        const icon = iconGrid.querySelector(`[data-id="${CSS.escape(item.id)}"]`);
-        const position = state.iconPositions[item.id];
-        return icon && position ? { id:item.id, icon, x:position.x, y:position.y } : null;
-      }).filter(Boolean);
-      snapDesktopIcons(droppedIcons);
-      syncDesktopSelection();
-      saveState();
+      placeDesktopItems(moving.map(item => item.id), dropPosition, { select:true });
     }
     const targetName = targetParentId === "desktop" ? "Desktop" : getItem(targetParentId)?.name || "folder";
     toast(moving.length === 1 ? `${moving[0].name} moved to ${targetName}.` : `${moving.length} items moved to ${targetName}.`);
@@ -186,7 +177,7 @@
     clearDropTargets();
     const element = document.elementFromPoint(clientX, clientY);
     if (!element) return null;
-    const recycle = element.closest('.desktop-icon[data-id="recycle"]');
+    const recycle = element.closest('[data-trash-drop-target],.desktop-icon[data-id="recycle"]');
     if (recycle && movableItems(movingIds).length) return { kind:"trash", element:recycle };
     const folderElement = element.closest("[data-drop-folder-id]");
     if (folderElement) {
@@ -291,6 +282,35 @@
 
   function desktopPositionFromCell(column, row, icon) {
     return clampIconPosition(DESKTOP_GRID.originX + column * DESKTOP_GRID.columnWidth, DESKTOP_GRID.originY + row * DESKTOP_GRID.rowHeight, icon);
+  }
+
+  function desktopPositionFromPointer(point) {
+    const rect = desktop.getBoundingClientRect();
+    return {
+      x:point.clientX - rect.left - 34,
+      y:point.clientY - rect.top - 38
+    };
+  }
+
+  function placeDesktopItems(ids, desiredPosition, options = {}) {
+    const itemIds = [...new Set(ids)].filter(id => state.items.some(item => item.id === id && item.parentId === "desktop"));
+    if (!itemIds.length) return;
+    itemIds.forEach((id, index) => {
+      state.iconPositions[id] = { x:desiredPosition.x + (index % 3) * 4, y:desiredPosition.y + Math.floor(index / 3) * 4 };
+    });
+    renderDesktop();
+    const moving = itemIds.map(id => {
+      const icon = iconGrid.querySelector(`[data-id="${CSS.escape(id)}"]`);
+      const position = state.iconPositions[id];
+      return icon ? { id, icon, x:position.x, y:position.y } : null;
+    }).filter(Boolean);
+    snapDesktopIcons(moving);
+    if (options.select) {
+      selectedDesktopIds.clear();
+      itemIds.forEach(id => selectedDesktopIds.add(id));
+      syncDesktopSelection();
+    }
+    saveState();
   }
 
   function snapDesktopIcons(moving) {
@@ -597,7 +617,7 @@
       </div>
       <div class="addressbar"><label>Address</label><div class="address-field">${svg("folder")}<nav class="address-trail" aria-label="Current folder path"></nav></div></div>
       <div class="explorer-body">
-        <aside class="places"><div class="place-card"><h3>PLACES</h3><button data-place="desktop">${svg("computer")} Desktop</button><button data-place="documents">${svg("folder")} My Documents</button><button data-place="trash">${svg("bin")} Recycle Bin</button></div><div class="place-card"><h3>LITTLE TIP</h3><p style="padding:3px 8px 8px;margin:0;font-size:9px;line-height:1.5">Double-click to open. Right-click for more options.</p></div></aside>
+        <aside class="places"><div class="place-card"><h3>PLACES</h3><button data-place="desktop">${svg("computer")} Desktop</button><button data-place="documents">${svg("folder")} My Documents</button><button data-place="trash" data-trash-drop-target>${svg("bin")} Recycle Bin</button></div><div class="place-card"><h3>LITTLE TIP</h3><p style="padding:3px 8px 8px;margin:0;font-size:9px;line-height:1.5">Double-click to open. Drag items onto Recycle Bin to remove them.</p></div></aside>
         <section class="file-area"></section>
       </div>
       <div class="statusbar"><span class="item-count"></span><span>Afterglow Local Disk</span></div>`;
@@ -756,6 +776,7 @@
         button.className = `address-crumb${index === segments.length - 1 ? " current" : ""}`;
         button.textContent = segment.label;
         button.title = `Open ${segment.label}`;
+        if (segment.id === "trash") button.dataset.trashDropTarget = "";
         if (index === segments.length - 1) button.setAttribute("aria-current", "location");
         button.onclick = event => { event.stopPropagation(); if (segment.id !== currentId) navigate(segment.id); };
         trail.append(button);
@@ -771,6 +792,8 @@
       visibleItems = source.sort((a,b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
       const fileArea = root.querySelector(".file-area");
       fileArea.dataset.folderId = currentId;
+      if (currentId === "trash") fileArea.dataset.trashDropTarget = "";
+      else delete fileArea.dataset.trashDropTarget;
       const visibleIds = new Set(visibleItems.map(item => item.id));
       selectedIds.forEach(itemId => { if (!visibleIds.has(itemId)) selectedIds.delete(itemId); });
       renderAddressPath();
@@ -855,7 +878,7 @@
     count(); setTimeout(() => editor.focus(), 0);
   }
 
-  function promptCreate(type, parentId, callback = () => {}, content = "", afterCreate) {
+  function promptCreate(type, parentId, callback = () => {}, content = "", afterCreate, options = {}) {
     const form = document.createElement("form"); form.className = "dialog-wrap";
     form.innerHTML = `<div class="prompt-form"><label>${type === "folder" ? "Name this new folder" : "Name this new text file"}<input value="${type === "folder" ? "New Folder" : "Untitled"}" maxlength="60" autocomplete="off"></label><div class="dialog-actions"><button type="button" class="dialog-button" data-cancel>Cancel</button><button class="dialog-button primary">Create</button></div></div>`;
     const dialogId = `dialog-${uid()}`;
@@ -866,7 +889,11 @@
       e.preventDefault(); const value = input.value.trim(); if (!value) return;
       const item = {id:uid(),name:uniqueName(value,parentId,type),type,parentId,created:Date.now()};
       if (type === "text") { item.content=content; item.modified=Date.now(); }
-      state.items.push(item); saveState(); renderDesktop(); closeWindow(dialogId); callback(item); if (afterCreate) afterCreate(item); toast(`${item.name} created.`);
+      state.items.push(item);
+      if (parentId === "desktop" && options.dropPoint) {
+        placeDesktopItems([item.id], desktopPositionFromPointer(options.dropPoint), { select:true });
+      } else { saveState();renderDesktop(); }
+      closeWindow(dialogId); callback(item); if (afterCreate) afterCreate(item); toast(`${item.name} created.`);
     };
   }
 
@@ -957,7 +984,7 @@
   function hideContext(){contextMenu.classList.add("hidden");}
   function toast(message){const el=document.createElement("div");el.className="toast";el.textContent=message;document.querySelector("#toast-region").append(el);setTimeout(()=>el.remove(),2600);}
 
-  function desktopContextEntries() {
+  function desktopContextEntries(dropPoint) {
     return [
       {label:"Open File Explorer",action:() => openExplorer("desktop")},
       "separator",
@@ -969,8 +996,8 @@
       {label:"Select All",shortcut:"Ctrl+A",disabled:state.desktopIconsHidden,action:selectAllDesktopIcons},
       {label:"Refresh",shortcut:"F5",action:() => {renderDesktop();toast("Desktop refreshed.");}},
       "separator",
-      {label:"New Folder",action:() => promptCreate("folder","desktop")},
-      {label:"New Text Document",action:() => promptCreate("text","desktop")},
+      {label:"New Folder",action:() => promptCreate("folder","desktop",()=>{},"",null,{dropPoint})},
+      {label:"New Text Document",action:() => promptCreate("text","desktop",()=>{},"",null,{dropPoint})},
       ...(state.trash.length ? ["separator",{label:"Empty Recycle Bin",action:emptyTrash}] : []),
       "separator",
       {label:"About Afterglow OS",action:openAbout},
@@ -1015,7 +1042,7 @@
   }
 
   desktop.addEventListener("click", e=>{hideContext();if(!e.target.closest("#start-menu,#start-button"))closeStartMenu();if(!e.target.closest("#calendar-popover,#clock-button")){document.querySelector("#calendar-popover").classList.add("hidden");document.querySelector("#clock-button").classList.remove("active");}});
-  desktop.addEventListener("contextmenu", e=>{if(e.target===desktop || e.target.closest(".rain-wallpaper,.sky-grain,.sun-haze,.landscape,.power-lines"))showContext(e,desktopContextEntries());});
+  desktop.addEventListener("contextmenu", e=>{if(e.target===desktop || e.target.closest(".rain-wallpaper,.sky-grain,.sun-haze,.landscape,.power-lines"))showContext(e,desktopContextEntries({clientX:e.clientX,clientY:e.clientY}));});
   startButton.onclick=e=>{e.stopPropagation();const open=startMenu.classList.toggle("hidden")===false;startButton.classList.toggle("active",open);startButton.setAttribute("aria-expanded",String(open));if(open){const search=document.querySelector("#start-search");search.value="";search.dispatchEvent(new Event("input"));setTimeout(()=>search.focus(),40);}};
   startMenu.querySelectorAll("[data-start-action]").forEach(btn=>btn.onclick=()=>{closeStartMenu();runShellAction(btn.dataset.startAction);});
   const startSearch=document.querySelector("#start-search"),startProgramButtons=[...startMenu.querySelectorAll(".start-programs [data-start-action]")];
